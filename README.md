@@ -102,21 +102,50 @@ Your third session on a feature knows about the first two. The resume prompt car
 
 Every handoff runs through quality checks before it's written:
 
+**Standard (200K context):**
+
 | Session type | Minimum lines | Target range |
 |---|---|---|
 | Light (quick fix) | 80 | 80–120 |
 | Medium (multi-step) | 120 | 120–180 |
 | Heavy (testing, data, pivots) | 150 | 180–300 |
 
-If the draft is under the minimum, the skill re-mines the conversation and expands thin sections. Sessions over 300 lines split into cross-referenced parts.
+**Extended (1M context):**
 
-## Integrations
+| Session type | Minimum lines | Target range |
+|---|---|---|
+| Light (quick fix) | 120 | 120–200 |
+| Medium (multi-step) | 200 | 200–350 |
+| Heavy (testing, data, pivots) | 250 | 300–600 |
 
-Everything is optional. The skills work standalone and degrade gracefully.
+The skill auto-detects your context window size from the system prompt. If the draft is under the minimum, it re-mines the conversation and expands thin sections. Sessions over the split threshold (300 standard / 600 extended) split into cross-referenced parts.
 
-- **Task trackers** — [beads](https://github.com/beads-project/beads), Linear, Jira, GitHub Issues, or any CLI tracker. Used for gathering active work context and updating task notes. The skill files use `bd` (beads) as a concrete example — swap in your tracker's CLI.
-- **Memory systems** — any persistent recall tool. The skills search for prior context on the current work automatically when available.
-- **Git** — `git log`, `git diff`, `git status` for state gathering. Runs automatically when git is available.
+## Works great with
+
+Everything is optional — the skills work standalone and degrade gracefully. But they unlock more when paired with complementary tools:
+
+### Recommended stack
+
+| Tool | What it does for handoffs | Link |
+|---|---|---|
+| **[Beads](https://github.com/beads-project/beads)** | Issue tracking that lives in your repo. Handoffs auto-detect active beads, use bead IDs as chain tags, and update bead notes on close. The tightest integration. | [Install beads](https://github.com/beads-project/beads#install) |
+| **[OpenViking](https://github.com/openviking/openviking)** | Persistent AI memory across sessions. Handoffs search OV for prior decisions, failed approaches, and context from earlier sessions — so chain continuity extends beyond what's in the handoff files. | [Install OpenViking](https://github.com/openviking/openviking#install) |
+| **Git** | `git log`, `git diff`, `git status` for state gathering. Runs automatically when git is available. | — |
+
+### How the stack fits together
+
+```
+Beads       → tracks WHAT work needs doing (issues, deps, priorities)
+OpenViking  → remembers WHAT was learned (decisions, patterns, gotchas)
+Handoff     → captures WHERE you stopped (state, evidence, next steps)
+```
+
+Beads gives handoffs their chain tags. OpenViking gives handoffs prior context. Together, a new session can reconstruct the full picture: what's assigned, what was tried before, and exactly where to pick up.
+
+### Other integrations
+
+- **Any CLI task tracker** — Linear, Jira CLI, GitHub Issues. The skill files use `bd` (beads) as a concrete example — swap in your tracker's CLI.
+- **Any memory/recall system** — the skills search for prior context automatically when a recall tool is available.
 
 ## Customization
 
