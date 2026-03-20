@@ -2,7 +2,7 @@
 
 **Never lose context between AI coding sessions.**
 
-Session handoff skills for [Claude Code](https://claude.ai/code) that capture decisions, failed approaches, measurements, and next steps — so your next session picks up exactly where you left off. No more rediscovering what was already tried. No more lost reasoning.
+Session handoff skills for [Claude Code](https://claude.ai/code) that capture decisions, failed approaches, measurements, and next steps — so your next session picks up exactly where you left off. Save context, use fewer tokens, and stop wasting 20-40% of each session rediscovering what was already tried.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-blueviolet.svg)](https://claude.ai/code)
