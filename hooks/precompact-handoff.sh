@@ -2,7 +2,6 @@
 # PreCompact Auto-Handoff — runs automatically before context compaction
 # Captures raw project state as a safety net so the next session has orientation.
 # Project-agnostic: uses beads/git/plans when available, skips gracefully when not.
-# Works standalone. Optional task tracker integration (beads) if available.
 
 set -euo pipefail
 
@@ -25,14 +24,17 @@ fi
 
 HANDOFF_FILE="${HANDOFF_DIR}/HANDOFF_auto-precompact_${DATE}_${TIMESTAMP##*_}.md"
 
-# --- Gather state (each section fails gracefully, capped for brevity) ---
+# --- Gather state (each section fails gracefully) ---
+# Extended limits: 1M context models can absorb bigger auto-handoffs (target: 80 lines vs 50)
 
-TASKS_ACTIVE=$(command -v bd >/dev/null 2>&1 && bd list --status=in_progress 2>/dev/null | head -15 || echo "_No task tracker available_")
-GIT_LOG=$(git log --oneline -8 2>/dev/null || echo "_No git available_")
-GIT_DIFF=$(git diff --stat 2>/dev/null | head -10 || echo "")
+BEADS_ACTIVE=$(bd list --status=in_progress 2>/dev/null | head -25 || echo "_No beads available_")
+BEADS_OPEN=$(bd list --status=open --priority=0,1 2>/dev/null | head -15 || echo "")
+GIT_LOG=$(git log --oneline -15 2>/dev/null || echo "_No git available_")
+GIT_DIFF=$(git diff --stat 2>/dev/null | head -20 || echo "")
 GIT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+GIT_STATUS=$(git status -s 2>/dev/null | head -20 || echo "")
 
-# --- Write handoff file (target: under 50 lines) ---
+# --- Write handoff file (target: under 80 lines for 1M, under 50 for standard) ---
 cat > "$HANDOFF_FILE" << HEREDOC
 # Auto-Handoff (Pre-Compaction Safety Net)
 
@@ -42,14 +44,24 @@ cat > "$HANDOFF_FILE" << HEREDOC
 
 ---
 
-## Active Work
+## Active Work (In Progress)
 
-${TASKS_ACTIVE}
+${BEADS_ACTIVE}
+
+## High-Priority Open Work
+
+${BEADS_OPEN}
 
 ## Recent Commits
 
 \`\`\`
 ${GIT_LOG}
+\`\`\`
+
+## Working Tree Status
+
+\`\`\`
+${GIT_STATUS}
 \`\`\`
 
 ## Uncommitted Changes
@@ -60,6 +72,6 @@ ${GIT_DIFF}
 HEREDOC
 
 # --- Persist to beads memory if available ---
-command -v bd >/dev/null 2>&1 && bd remember "Auto-handoff written to ${HANDOFF_FILE} before context compaction on ${DATE}" 2>/dev/null || true
+bd remember "Auto-handoff written to ${HANDOFF_FILE} before context compaction on ${DATE}" 2>/dev/null || true
 
 echo "Auto-handoff saved to ${HANDOFF_FILE}"

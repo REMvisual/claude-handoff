@@ -34,7 +34,7 @@ Execute the full `/handoff` skill first. This produces the handoff file with all
 
 Once the handoff file exists, write the plan. The plan lives in the **same directory** as the handoff, with the **same slug**:
 
-- Handoff: `HANDOFF_{chain_tag}_{slug}_{date}.md` (already written — or `HANDOFF_{slug}_{date}.md` if no tracker)
+- Handoff: `HANDOFF_{chain_tag}_{slug}_{date}.md` (already written — or `HANDOFF_{slug}_{date}.md` if no beads)
 - Plan: `PLAN_{chain_tag}_{slug}_{date}.md` (write this now — mirror the handoff's naming)
 
 ### What makes a good plan
@@ -145,7 +145,8 @@ Include both "minimum viable success" and "full success" if applicable.
 # Restore full context
 cat {handoff_file_path}
 
-# Prior context (if memory system available)
+# Prior context (if OV available)
+# /memory-recall {topic keywords}
 
 # Key source files for Phase 1
 {3-5 files to read before starting}
@@ -165,7 +166,6 @@ cat {handoff_file_path}
 
 **Step 3: Create beads for phases (if available).**
 
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
 ```bash
 bd create --title="Phase 1: {name}" --description="{what and why}" --type=task --priority=2
 bd create --title="Phase 2: {name}" --description="{what and why}" --type=task --priority=2
@@ -174,14 +174,12 @@ bd dep add {phase2_id} {phase1_id}
 ```
 
 If tasks are already in_progress, update their notes:
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
 ```bash
 bd update {id} --notes "Plan written. See {plan_file_path}"
 ```
 
 **Step 4: Persist to memory (if available).**
 
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
 ```bash
 bd remember "Plan written to {plan_path}, handoff to {handoff_path}. Next: Phase 1 — {first action}"
 ```
@@ -240,6 +238,6 @@ No session close, no paste prompt. The user is staying in this session to execut
 5. **Phases explain HOW, not just WHAT.** "Remove is_low_onset param, compute own onset from low_flux using 3.0x median threshold" not "modify the detector."
 6. **Success criteria use baseline numbers.** Reference the handoff's Evidence & Data section.
 7. **Rollback per phase.** Every phase must say what to revert if it makes things worse.
-8. **Same naming for paired files.** Mirror the handoff filename: `HANDOFF_PROJ-abc_foo_date.md` + `PLAN_PROJ-abc_foo_date.md` (or without chain tag if no tracker).
+8. **Same naming for paired files.** Mirror the handoff filename: `HANDOFF_Proj-abc_foo_date.md` + `PLAN_Proj-abc_foo_date.md` (or without chain tag if no beads).
 9. **Don't close after handoff.** Close prompt happens after the plan, not after the handoff.
 10. **Chain metadata propagates.** The PLAN file must copy the Chain line from its paired HANDOFF file. Same chain-id, same seq. This lets cleanup find both files together.

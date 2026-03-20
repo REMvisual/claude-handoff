@@ -3,13 +3,16 @@ name: handoff
 description: Create a structured session handoff when context is running low or work is pausing. Deep context mining, self-validation, multi-file splitting. Captures everything the next session needs.
 user_invocable: true
 triggers:
-  - handoff
-  - save context
+  - do a handoff
+  - create a handoff
+  - run handoff
+  - save session context
   - context running low
   - wrap up session
   - session handoff
-  - save progress
+  - save session progress
   - running out of context
+  - close this session
 argument-hint: [optional reason, e.g. "context low", "end of day"]
 ---
 
@@ -18,13 +21,31 @@ argument-hint: [optional reason, e.g. "context low", "end of day"]
 **IMPORTANT: This skill writes files. You MUST NOT be in Claude Code's built-in plan mode.**
 If you are currently in plan mode, **exit plan mode first** (use ExitPlanMode) before proceeding.
 
+**TRIGGER GUARD: Do NOT execute this skill if the user is merely _discussing_ handoffs, editing handoff files, or referencing the handoff skill in conversation.** This skill should ONLY run when the user explicitly wants to CREATE a handoff right now — i.e., they are requesting to save session state and potentially close. If the context is ambiguous (e.g., "let's talk about the handoff skill", "update the handoff format", "what does the handoff do"), do NOT run the skill — just respond normally. When in doubt, ask: "Did you want me to create a handoff now, or are we just discussing it?"
+
 You are creating a structured handoff document that preserves session context for the next session with **minimal context cost on reload**.
 
-**This skill typically runs at ~75% context usage** — you have a LOT of conversation history to mine. Use it. The whole point is to extract maximum value from the session before closing.
+**This skill typically runs at ~75% context usage** — you have a LOT of conversation history to mine. Use it. The whole point is to extract maximum value from the session before closing. On a 1M context model, 75% means ~750K tokens of history — significantly more to mine and significantly more room in the handoff file.
 
 The user should NOT need to write anything or provide any context — you gather everything automatically. Just `/handoff` is sufficient.
 
 **Arguments:** $ARGUMENTS
+
+---
+
+## Agent Strategy
+
+**Use parallel agent teams aggressively.** The handoff skill has multiple independent research tasks that MUST run as parallel subagents. Do NOT run them sequentially — launch agent teams in a single message with multiple Agent tool calls.
+
+**What stays with the main agent:** Step 1C (conversation mining) — only you have the conversation history. Everything else can be delegated.
+
+**What gets parallelized:**
+- Step 1A: External state gathering (git, beads, handoffs, plans)
+- Step 1B-2 + 1B-3: Chain scanning + OV memory recall (once chain tag is resolved)
+- Step 1B-4: Stale reference checking (if parent handoff found)
+- Steps 5 + 6: Beads update + memory persist (after handoff is written)
+
+**Agent dispatch pattern:** Launch agents with clear, self-contained prompts. Each agent should return structured data you can slot directly into the handoff sections. Don't launch agents for trivial single-command work — use them when there are 2+ independent multi-step research tasks.
 
 ---
 
@@ -34,24 +55,34 @@ This is the most important step. You are mining the ENTIRE conversation for data
 
 ### 1A: External State
 
-Run these in parallel. Silently skip any that aren't available:
+**Launch as a parallel agent team** — dispatch all of these simultaneously in a single message. Each agent runs independently and returns its findings. Silently skip any that aren't available.
 
-```bash
-# Git state
-git log --oneline -20
-git diff --stat
-git status -s | head -30
-
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
-bd list --status=in_progress 2>/dev/null
-bd list --status=open --priority=0,1 2>/dev/null
-
-# Existing handoffs (check for prior work on this topic)
-ls -la plans/handoffs/ 2>/dev/null || ls -la .claude/handoffs/ 2>/dev/null
-
-# Active plan files
-ls plans/*.md 2>/dev/null | head -10
+**Agent 1: Git State**
 ```
+Run these commands and return the results:
+- git log --oneline -20
+- git diff --stat
+- git status -s | head -30
+- git branch --show-current
+```
+
+**Agent 2: Beads & Task State**
+```
+Run these commands (skip gracefully if bd not available):
+- bd list --status=in_progress
+- bd list --status=open --priority=0,1
+- bd stats
+```
+
+**Agent 3: Prior Handoffs & Plans**
+```
+Search for existing handoffs and plans:
+- ls -la plans/handoffs/ 2>/dev/null || ls -la .claude/handoffs/ 2>/dev/null
+- ls plans/*.md 2>/dev/null | head -10
+- Report file names, dates, and any chain tags visible in the filenames
+```
+
+**Alternatively**, if the project is simple and these are just quick commands, you MAY run them as parallel Bash calls instead of full agents. Use your judgment — agents shine when there's multi-step work (e.g., reading handoff files to extract chain info).
 
 ### 1B: Chain Detection & Prior Session Context
 
@@ -82,7 +113,7 @@ Use the **two-tier detection** to find the parent handoff. Stop at the first tie
 
 Check how this session was started. If the user pasted a prompt like:
 ```
-Read `HANDOFF_foo_2026-03-19.md` (seq 2, myproject-1abc) and continue...
+Read `HANDOFF_myproject-1abc_foo_2026-03-19.md` (seq 2, myproject-1abc) and continue...
 ```
 Then you have the parent file directly. **Read that parent file's header** to get the chain tag and seq number. This is a **continuation** — inherit the chain tag, set seq = parent's seq + 1, set parent = that file.
 
@@ -99,29 +130,45 @@ If found, read the **latest** matching file (highest seq number). This is a **co
 
 **If neither tier matches:** This is the **first handoff in a new chain**. Set `seq: 1`, `parent: none`.
 
-#### Step 1B-3: Load Prior Context
+#### Step 1B-3 + 1B-4: Prior Context & Stale Reference Check (PARALLEL AGENTS)
 
-**Check persistent memory** (if a memory/recall tool is available):
-- Run your memory tool with 2-3 different keyword searches related to the current work (e.g., feature name, bug area, epic name, key function names)
-- Look for: prior handoffs/plans on the same topic, past decisions, previous failed approaches, context from earlier sessions
-- If your memory tool returns relevant prior context, it MUST be incorporated — especially into "What We Tried" and "Key Decisions"
+**Once you have the chain tag from 1B-1 and know whether a parent exists from 1B-2, launch these as a parallel agent team in a single message:**
 
-**If this is a continuation:**
-- Read the parent handoff file for context (but DON'T load its full content into the new handoff — soft reference only)
-- Note what changed since the parent handoff
-
-**If this is a new chain:**
-- Scan for any handoff files with related slugs as a courtesy check — if you find related prior work, mention it in the header but don't inherit its chain tag
-
-#### Step 1B-4: Stale Reference Check
-
-**If a parent handoff was found**, scan it for code identifiers (function names, class names, parameter names, variable names, file paths) and spot-check whether they still exist in the codebase:
-
-```bash
-# Extract key identifiers from the parent handoff's code blocks and backtick-quoted names,
-# then grep each against the project source. Flag any that return zero matches.
+**Agent A: OpenViking Memory Recall**
+```
+Search for prior context related to this work. Run /memory-recall with 2-3 different
+keyword searches: {feature name}, {bug area / epic name}, {key function names}.
+Return: prior handoffs/plans on this topic, past decisions, previous failed approaches,
+context from earlier sessions. Focus on anything that should go into "What We Tried"
+and "Key Decisions".
 ```
 
+**Agent B: Parent Handoff Context** (only if parent was found)
+```
+Read the parent handoff file at {parent_path}. Extract:
+1. The chain tag and seq number from the header
+2. A summary of "Where We Are" and "Where We're Going" from the parent
+3. ALL code identifiers (backtick-quoted names, function/class names in code blocks,
+   file paths) — return them as a list for stale reference checking
+Do NOT copy the full parent content — just extract the above.
+```
+
+**Agent C: Stale Reference Check** (only if parent was found — can run alongside Agent B if you extract identifiers from the filename/grep, or chain after Agent B)
+```
+Given these code identifiers from the parent handoff: {list from Agent B or from
+a quick grep of the parent file}
+For each identifier, grep the project codebase to check if it still exists.
+Return ONLY identifiers that were NOT found — these are stale references.
+If all identifiers check out, return "none stale".
+```
+
+**If no parent exists:** Skip Agents B and C. Still run Agent A (OV recall) — prior context is valuable even for new chains.
+
+**If OV / memory-recall is not available:** Skip Agent A. Still run B and C if parent exists.
+
+**Merge results:** Once agents return, incorporate OV context into "What We Tried" and "Key Decisions". Use stale references (if any) for the `## Stale References` section. Use parent summary to frame "what changed since last time."
+
+**Rules for stale references:**
 - Only check identifiers that look like code (backtick-quoted, in code blocks, or clearly a function/class/param name) — skip prose
 - If any identifiers are missing from the codebase, add a `## Stale References` section early in the new handoff listing what was renamed/removed since the parent, so the next session doesn't trust outdated names
 - Don't try to guess what they were renamed to — just flag them. The next session will resolve it by reading actual code
@@ -161,16 +208,16 @@ Use the first available directory:
 
 File names must be **descriptive** — someone scanning the directory should immediately know what chain a file belongs to and what it's about.
 
-**If a task tracker is available** (chain tag resolved in Step 1B-1):
+**If beads are available** (chain tag resolved in Step 1B-1):
 
 Format: `HANDOFF_{chain_tag}_{slug}_{YYYY-MM-DD}.md`
 
-- **chain_tag:** The task/epic ID from Step 1B-1 (e.g., `PROJ-n6ji`). For multi-task chains, use the primary task only (the one most central to the work).
+- **chain_tag:** The bead/epic ID from Step 1B-1 (e.g., `Audiophile-n6ji`). For multi-bead chains, use the primary bead only (the one most central to the work).
 - **slug:** 2-4 word kebab-case summary of the topic
 - **Date:** `YYYY-MM-DD`
-- Example: `HANDOFF_PROJ-n6ji_dsp-phase0-baseline-reset_2026-03-19.md`
+- Example: `HANDOFF_Audiophile-n6ji_dsp-phase0-baseline-reset_2026-03-19.md`
 
-**If no task tracker is available** (standalone hex fallback):
+**If beads are NOT available** (no beads installed, standalone hex fallback):
 
 Format: `HANDOFF_{slug}_{YYYY-MM-DD}.md`
 
@@ -186,10 +233,21 @@ Write to `{handoff_dir}/{filename}` using this structure.
 
 ### Line Budget & Splitting
 
-- **Target: 180-300 lines per file.**
-- **Hard minimum: 150 lines.** If your draft is under 150 lines, you haven't captured enough. Go back to Step 1C and re-mine the conversation.
-- **Light sessions** (quick fix, single feature) may go as low as **80 lines** — but only if the session was genuinely short.
-- **If data exceeds 300 lines:** Split into multiple files (use the same prefix from Step 3):
+**Model-aware limits:** Check your system prompt for context window size. If it says "1M context" or "1m", use the **Extended** column. Otherwise use **Standard**.
+
+| | Standard (200K) | Extended (1M) |
+|---|---|---|
+| **Target range** | 180-300 lines | 300-600 lines |
+| **Hard minimum** | 150 lines | 250 lines |
+| **Light session min** | 80 lines | 120 lines |
+| **Split threshold** | 300 lines | 600 lines |
+| **Auto-handoff (PreCompact)** | 50 lines | 80 lines |
+
+**Why bigger with 1M?** A 600-line handoff is ~0.5% of a 1M window — negligible context cost. More detail in the handoff = less re-discovery in the next session. The whole point is to trade cheap disk bytes for expensive re-investigation time.
+
+- If your draft is under the hard minimum, you haven't captured enough. Go back to Step 1C and re-mine the conversation.
+- **Light sessions** (quick fix, single feature) may go as low as the light session min — but only if the session was genuinely short.
+- **If data exceeds the split threshold:** Split into multiple files (use the same prefix from Step 3):
   - `{filename_without_ext}_part1.md` — Session state, goals, where we are, what we tried
   - `{filename_without_ext}_part2.md` — Evidence & data, test results, comparison tables, code analysis
   - Link them: Part 1 header says `**See also:** part2 for evidence & data tables`
@@ -252,7 +310,7 @@ These names may have been renamed or removed since the parent handoff. Check the
 5. What we learned from it
 
 This is the SINGLE MOST EXPENSIVE section to re-discover. Be thorough.
-Include approaches from prior sessions too (from memory/prior handoffs).
+Include approaches from prior sessions too (from OV/prior handoffs).
 5-15 entries depending on session complexity.
 Skip this section ONLY if the session was genuinely straightforward with no pivots.}
 
@@ -318,10 +376,11 @@ Skip if the session didn't involve deep code reading.
 ## Quick Start for Next Session
 
 ```bash
-# Task context (if tracker available)
-# bd show {task_id}  # beads example
+# Restore context
+bd show {bead_id}
 
-# Prior context (if memory system available)
+# Prior context (if OV available)
+# /memory-recall {topic keywords}
 
 # Key files to read first
 {3-5 most important files for understanding current state}
@@ -347,11 +406,23 @@ After writing the handoff, count its lines and validate:
 
 ### 1. Line Count Check
 
+Use the **model-aware limits** from Step 4's Line Budget table. Check your system prompt for "1M context" — if present, use Extended column.
+
+**Standard (200K):**
+
 | Session type | Under this = FAIL | Target range |
 |---|---|---|
 | Light (quick fix) | Under 80 | 80-120 |
 | Medium (multi-step) | Under 120 | 120-180 |
 | Heavy (testing, data, multiple approaches) | Under 150 | 180-300 |
+
+**Extended (1M):**
+
+| Session type | Under this = FAIL | Target range |
+|---|---|---|
+| Light (quick fix) | Under 120 | 120-200 |
+| Medium (multi-step) | Under 200 | 200-350 |
+| Heavy (testing, data, multiple approaches) | Under 250 | 300-600 |
 
 If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin sections. Common culprits:
 - "Where We Are" has fewer than 10 bullets
@@ -364,7 +435,7 @@ If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin secti
 
 - [ ] Does "Where We Are" include specific file names AND function names?
 - [ ] Does "What We Tried" include at least one entry for every distinct approach discussed?
-- [ ] Does "Evidence & Data" include actual numbers, not summaries? ("error rate: 28.6%" not "high error")
+- [ ] Does "Evidence & Data" include actual numbers, not summaries? ("error rate: 28.6" not "high error")
 - [ ] Does "Key Decisions" include at least one rejected alternative?
 - [ ] If prior handoffs exist on this topic, is there a clear "what changed since last time"?
 - [ ] Does "Quick Start" have a concrete first action, not just "continue working"?
@@ -379,7 +450,7 @@ If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin secti
 
 ### 4. Split Check
 
-- Over 300 lines? **SPLIT** into part1 + part2 with cross-references (see splitting rules in Step 4).
+- Over the split threshold (300 standard / 600 extended)? **SPLIT** into part1 + part2 with cross-references (see splitting rules in Step 4).
 
 ### 5. If any check fails
 
@@ -387,19 +458,16 @@ Fix the handoff before proceeding. Rewrite the thin sections. You have ~25% cont
 
 ---
 
-## Step 5: Update Beads (if available)
+## Steps 5 + 6: Update Beads & Persist Memory (PARALLEL)
 
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
-If beads are available and tasks are in_progress, update their notes:
+**Run these in parallel** — they are independent writes. Launch as parallel Bash calls (no need for full agents here, these are single commands each):
 
+**Beads update** (if beads available and tasks are in_progress):
 ```bash
 bd update {id} --notes "Handoff written. See {file_path}"
 ```
 
-## Step 6: Persist to Memory (if available)
-
-# Task tracker integration (optional — works with beads, or adapt to your tracker)
-If `bd remember` is available:
+**Memory persist** (if `bd remember` available):
 ```bash
 bd remember "Handoff written to {path}. Chain: {chain_tag} seq {N}. Status: {status}. Next: {next action}"
 ```
@@ -438,7 +506,13 @@ After the file is written and confirmed, ask the user:
      {One-line summary of what this session accomplished}
 
      Handoff: {handoff_filename}
-     Task(s): {task_ids or "none"}
+     Bead(s): {bead_ids or "none"}
+
+     Generated with [Claude Code](https://claude.ai/code)
+     via [Happy](https://happy.engineering)
+
+     Co-Authored-By: Claude <noreply@anthropic.com>
+     Co-Authored-By: Happy <yesreply@happy.engineering>
      ```
    - Show the user what was committed (file list + commit hash)
    - If working tree is already clean, say "Working tree clean — nothing to commit"
@@ -457,11 +531,11 @@ After the file is written and confirmed, ask the user:
    -------------------------------------------------------
    PASTE THIS INTO YOUR NEXT SESSION:
    -------------------------------------------------------
-   Read `{path to file}` (seq {N}, {chain_tag}) and continue from "Where We're Going". Check your task tracker for active work.
+   Read `{path to file}` (seq {N}, {chain_tag}) and continue from "Where We're Going". Check `bd list --status=in_progress` for active work.
 
    Before starting work, narrate your onboarding:
    1. Read the handoff file and summarize what you understand (goal, current state, what was tried)
-   2. Show which task(s) you're claiming and what phase/step you're starting
+   2. Show which bead(s) you're claiming and what phase/step you're starting
    3. State what you'll verify first (run tests, check baselines, read key files)
    4. Explain your planned first action and why
    Then wait for my go-ahead before executing.
@@ -504,9 +578,9 @@ mv {matching files} plans/handoffs/archive/
 
 ## Rules
 
-1. **You run at ~75% context.** You have massive conversation history available. MINE IT. Every measurement, every failed approach, every decision, every code insight.
-2. **Hard minimum: 150 lines** for medium/heavy sessions. If under 150, you haven't mined deeply enough.
-3. **Split over 300 lines.** Don't cram — split into parts and cross-reference.
+1. **You run at ~75% context.** You have massive conversation history available. MINE IT. Every measurement, every failed approach, every decision, every code insight. On 1M context, 75% = ~750K tokens — mine deeper, write longer.
+2. **Hard minimum: 150 lines (standard) / 250 lines (1M extended)** for medium/heavy sessions. If under the minimum, you haven't mined deeply enough.
+3. **Split over 300 lines (standard) / 600 lines (1M extended).** Don't cram — split into parts and cross-reference.
 4. **Self-check is mandatory.** Step 4-CHECK must pass before proceeding. If it fails, fix the handoff.
 5. **WHY over WHAT.** Code is in git. Decisions, failed approaches, data, and reasoning are what get lost.
 6. **"What We Tried" is chronological and exhaustive.** Include EVERY approach, not just the final one.
@@ -518,8 +592,9 @@ mv {matching files} plans/handoffs/archive/
 12. **Always ask to close.** Every handoff ends with the close session prompt.
 13. **Descriptive file names.** Names describe content, not increment counters.
 14. **No LATEST.md.** The paste prompt is the only resume mechanism.
-15. **Auto-handoffs are thinner.** If triggered by PreCompact, the file should be under 50 lines (emergency capture, not full mining).
+15. **Auto-handoffs are thinner.** If triggered by PreCompact, the file should be under 50 lines (standard) / 80 lines (1M extended) (emergency capture, not full mining).
 16. **Reference, don't inline.** Point to files and beads instead of copying their content.
 17. **No code snippets.** No API tables. No architecture diagrams. Those live in CLAUDE.md.
 18. **Chain continuity.** Every handoff must have valid Chain/Parent/Prior chain fields. Use bead/epic IDs as chain tags — no separate chain IDs needed. Resolution order: epic > beads (1-4) > most relevant beads (5+) > standalone hex fallback.
 19. **Paste prompt carries chain tag.** The ready-to-paste prompt must include `seq {N}, {chain_tag}` so the next session can detect the chain deterministically (Tier 1).
+20. **Use parallel agent teams.** Steps 1A, 1B-3/1B-4, and 5+6 have independent tasks — launch them as parallel agents in a single message. Do NOT run independent research sequentially. The main agent keeps conversation mining (1C) since only it has the history. See "Agent Strategy" section at top.
