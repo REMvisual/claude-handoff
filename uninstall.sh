@@ -1,7 +1,7 @@
 #!/bin/bash
 # claude-handoff uninstaller
 # Usage: bash uninstall.sh
-#   or:  curl -fsSL https://raw.githubusercontent.com/REMvisual/claude-handoff/main/uninstall.sh | bash
+#   or:  curl -fsSL https://raw.githubusercontent.com/REMvisual/claude-handoff/master/uninstall.sh | bash
 
 set -euo pipefail
 
@@ -22,7 +22,7 @@ for f in "${FILES[@]}"; do
   if [ -f "$f" ]; then
     rm "$f"
     echo "  Removed: $f"
-    ((removed++))
+    removed=$((removed + 1))
   else
     echo "  Not found (skipped): $f"
   fi
