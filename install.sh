@@ -1,12 +1,12 @@
 #!/bin/bash
 # claude-handoff installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/REMvisual/claude-handoff/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/REMvisual/claude-handoff/master/install.sh | bash
 # Pin a version: curl -fsSL ... | bash -s v1.2.0
 
 set -euo pipefail
 
 REPO="REMvisual/claude-handoff"
-BRANCH="${1:-main}"
+BRANCH="${1:-master}"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 
 SKILLS_DIR="${HOME}/.claude/skills"
