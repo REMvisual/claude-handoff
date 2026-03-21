@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-20
+
+### Fixed
+- **PreCompact hook** now actually fires — merged two hook entries that were blocking each other due to empty-matcher routing bug. The auto-handoff script had never executed in months of use.
+
+### Changed
+- **Skill slimmed 21%** (601 → 477 lines) — removed duplicate line budget tables, compressed agent descriptions into tables, shortened template guidance, deleted redundant Rules section. ~1,000 fewer tokens per `/handoff` invocation.
+
+## [1.1.1] - 2026-03-20
+
+### Added
+- "Works great with" section in README featuring Beads + OpenViking recommended stack
+- Safer trigger phrases: "close/wrap up session with a handoff", "hand off this session"
+- 1M Extended limits in README self-validation table
+
+### Fixed
+- Removed ambiguous triggers that fired on casual mentions of "handoff"
+
 ## [1.1.0] - 2026-03-20
 
 ### Added

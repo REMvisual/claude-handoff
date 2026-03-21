@@ -36,17 +36,14 @@ The user should NOT need to write anything or provide any context — you gather
 
 ## Agent Strategy
 
-**Use parallel agent teams aggressively.** The handoff skill has multiple independent research tasks that MUST run as parallel subagents. Do NOT run them sequentially — launch agent teams in a single message with multiple Agent tool calls.
+**Parallelize independent research.** Launch agent teams in a single message — do NOT run independent tasks sequentially.
 
-**What stays with the main agent:** Step 1C (conversation mining) — only you have the conversation history. Everything else can be delegated.
-
-**What gets parallelized:**
-- Step 1A: External state gathering (git, beads, handoffs, plans)
-- Step 1B-2 + 1B-3: Chain scanning + OV memory recall (once chain tag is resolved)
-- Step 1B-4: Stale reference checking (if parent handoff found)
-- Steps 5 + 6: Beads update + memory persist (after handoff is written)
-
-**Agent dispatch pattern:** Launch agents with clear, self-contained prompts. Each agent should return structured data you can slot directly into the handoff sections. Don't launch agents for trivial single-command work — use them when there are 2+ independent multi-step research tasks.
+| What | Parallel? | Why |
+|---|---|---|
+| Step 1A: External state (git, beads, plans) | Yes — 3 agents or Bash calls | Independent queries |
+| Step 1B-3/4: OV recall + stale refs | Yes — 2-3 agents | Independent research |
+| Step 1C: Conversation mining | No — main agent only | Only you have the history |
+| Steps 5+6: Beads + memory persist | Yes — parallel Bash calls | Independent writes |
 
 ---
 
@@ -56,34 +53,13 @@ This is the most important step. You are mining the ENTIRE conversation for data
 
 ### 1A: External State
 
-**Launch as a parallel agent team** — dispatch all of these simultaneously in a single message. Each agent runs independently and returns its findings. Silently skip any that aren't available.
+**Launch in parallel** (as agents or parallel Bash calls — judgment based on complexity):
 
-**Agent 1: Git State**
-```
-Run these commands and return the results:
-- git log --oneline -20
-- git diff --stat
-- git status -s | head -30
-- git branch --show-current
-```
-
-**Agent 2: Beads & Task State**
-```
-Run these commands (skip gracefully if bd not available):
-- bd list --status=in_progress
-- bd list --status=open --priority=0,1
-- bd stats
-```
-
-**Agent 3: Prior Handoffs & Plans**
-```
-Search for existing handoffs and plans:
-- ls -la plans/handoffs/ 2>/dev/null || ls -la .claude/handoffs/ 2>/dev/null
-- ls plans/*.md 2>/dev/null | head -10
-- Report file names, dates, and any chain tags visible in the filenames
-```
-
-**Alternatively**, if the project is simple and these are just quick commands, you MAY run them as parallel Bash calls instead of full agents. Use your judgment — agents shine when there's multi-step work (e.g., reading handoff files to extract chain info).
+| Agent | Commands | Returns |
+|---|---|---|
+| Git State | `git log --oneline -20`, `git diff --stat`, `git status -s \| head -30`, `git branch --show-current` | Branch, recent commits, uncommitted changes |
+| Task State | `bd list --status=in_progress`, `bd list --status=open --priority=0,1`, `bd stats` | Active/open beads (skip if bd unavailable) |
+| Prior Handoffs | `ls plans/handoffs/`, `ls .claude/handoffs/`, `ls plans/*.md` | Existing handoff files, dates, chain tags |
 
 ### 1B: Chain Detection & Prior Session Context
 
@@ -133,41 +109,16 @@ If found, read the **latest** matching file (highest seq number). This is a **co
 
 #### Step 1B-3 + 1B-4: Prior Context & Stale Reference Check (PARALLEL AGENTS)
 
-**Once you have the chain tag from 1B-1 and know whether a parent exists from 1B-2, launch these as a parallel agent team in a single message:**
+**Once chain tag is resolved from 1B-1/1B-2, launch in parallel:**
 
-**Agent A: OpenViking Memory Recall**
-```
-Search for prior context related to this work. Run /memory-recall with 2-3 different
-keyword searches: {feature name}, {bug area / epic name}, {key function names}.
-Return: prior handoffs/plans on this topic, past decisions, previous failed approaches,
-context from earlier sessions. Focus on anything that should go into "What We Tried"
-and "Key Decisions".
-```
+| Agent | Task | Returns |
+|---|---|---|
+| OV Recall | `/memory-recall` with 2-3 keyword searches (feature name, bug area, key functions) | Prior decisions, failed approaches, earlier session context |
+| Parent Context | Read parent handoff header, extract chain/seq, list code identifiers | Parent summary + identifier list for stale check |
+| Stale Refs | Grep each identifier from parent against codebase | List of identifiers NOT found (stale) |
 
-**Agent B: Parent Handoff Context** (only if parent was found)
-```
-Read the parent handoff file at {parent_path}. Extract:
-1. The chain tag and seq number from the header
-2. A summary of "Where We Are" and "Where We're Going" from the parent
-3. ALL code identifiers (backtick-quoted names, function/class names in code blocks,
-   file paths) — return them as a list for stale reference checking
-Do NOT copy the full parent content — just extract the above.
-```
-
-**Agent C: Stale Reference Check** (only if parent was found — can run alongside Agent B if you extract identifiers from the filename/grep, or chain after Agent B)
-```
-Given these code identifiers from the parent handoff: {list from Agent B or from
-a quick grep of the parent file}
-For each identifier, grep the project codebase to check if it still exists.
-Return ONLY identifiers that were NOT found — these are stale references.
-If all identifiers check out, return "none stale".
-```
-
-**If no parent exists:** Skip Agents B and C. Still run Agent A (OV recall) — prior context is valuable even for new chains.
-
-**If OV / memory-recall is not available:** Skip Agent A. Still run B and C if parent exists.
-
-**Merge results:** Once agents return, incorporate OV context into "What We Tried" and "Key Decisions". Use stale references (if any) for the `## Stale References` section. Use parent summary to frame "what changed since last time."
+Skip agents that don't apply (no OV → skip recall; no parent → skip Parent+Stale).
+Merge results into "What We Tried", "Key Decisions", and "Stale References".
 
 **Rules for stale references:**
 - Only check identifiers that look like code (backtick-quoted, in code blocks, or clearly a function/class/param name) — skip prose
@@ -288,62 +239,27 @@ These names may have been renamed or removed since the parent handoff. Check the
 
 ## The Goal
 
-{3-5 sentences. What is the overarching objective? Why does it matter? What's the user's end state?}
+{3-5 sentences. Overarching objective, why it matters, user's end state.}
 
 ## Where We Are
 
-{Comprehensive bullet list of what was accomplished AND what the data shows. Be exhaustive:
-- Every file modified with what changed and why
-- Every function/method added or changed with its signature
-- Test counts (X pass, Y fail, Z skip)
-- Measurements with actual numbers (BPM values, error rates, latencies, accuracy %)
-- A/B comparisons between approaches (before vs after)
-- Current state of the system — what works, what doesn't
-15-25 bullets for heavy sessions. If you have fewer than 10, you're summarizing too aggressively.}
+{15-25 bullets: every file/function changed, test counts, measurements with real numbers, what works/doesn't. Under 10 = too aggressive.}
 
 ## What We Tried (Chronological)
 
-{EVERY approach attempted this session, in order. For each:
-1. What was the hypothesis/approach
-2. What was done (specific changes)
-3. What the result was (with numbers if available)
-4. Why it worked / didn't work / was abandoned
-5. What we learned from it
-
-This is the SINGLE MOST EXPENSIVE section to re-discover. Be thorough.
-Include approaches from prior sessions too (from OV/prior handoffs).
-5-15 entries depending on session complexity.
-Skip this section ONLY if the session was genuinely straightforward with no pivots.}
+{EVERY approach chronologically: hypothesis, changes, result (with numbers), why it worked/didn't. MOST EXPENSIVE to re-discover. 5-15 entries. Include prior sessions.}
 
 ## Key Decisions
 
-{Every non-obvious decision and WHY. Include:
-- What was decided
-- What alternatives were considered
-- Why this option was chosen (constraints, data, user preference)
-- What was explicitly REJECTED and why — so the next session doesn't re-try it
-5-10 bullets.}
+{Every non-obvious decision + WHY. Include rejected alternatives. 5-10 bullets.}
 
 ## Evidence & Data
 
-{ALL test results, measurements, baselines, comparison tables. Include:
-- Actual numbers — never say "improved" without saying by how much
-- Reference data files by full path
-- Comparison tables where relevant (markdown tables work well)
-- Error analysis — what the numbers mean, not just what they are
-- Baseline numbers that success criteria should reference
-8-20 bullets or a combination of bullets and tables.
-Skip this section ONLY if the session produced zero measurements.}
+{ALL numbers, baselines, comparison tables, data file paths. Never say "improved" without how much. 8-20 bullets/tables. Skip if zero measurements.}
 
 ## Code Analysis
 
-{Key findings from reading source code that the next session needs:
-- Function signatures and parameter values that matter
-- Thresholds, constants, magic numbers with their current values
-- Architecture/data flow relevant to the work
-- Coupling points, upstream dependencies
-Skip if the session didn't involve deep code reading.
-5-10 bullets when applicable.}
+{Function signatures, thresholds, constants, architecture, coupling points. Skip if no deep code reading. 5-10 bullets.}
 
 ## Files Changed
 
@@ -362,17 +278,15 @@ Skip if the session didn't involve deep code reading.
 
 ## Where We're Going
 
-{Ordered bullet list of what comes next. Include phase/step numbers if part of a larger plan. 3-7 bullets.}
+{Ordered next steps with phase/step numbers. 3-7 bullets.}
 
 ## Risks & Blockers
 
-{Anything that could derail the next session. Include upstream dependencies, known flaky areas, environment issues.
-2-5 bullets. "None" if clear.}
+{Upstream deps, flaky areas, env issues. 2-5 bullets. "None" if clear.}
 
 ## Open Questions
 
-{Things we still don't know. Unknowns that need investigation. Hypotheses that haven't been tested.
-1-5 bullets. "None" if all questions are answered.}
+{Unknowns needing investigation. 1-5 bullets. "None" if answered.}
 
 ## Quick Start for Next Session
 
@@ -407,23 +321,7 @@ After writing the handoff, count its lines and validate:
 
 ### 1. Line Count Check
 
-Use the **model-aware limits** from Step 4's Line Budget table. Check your system prompt for "1M context" — if present, use Extended column.
-
-**Standard (200K):**
-
-| Session type | Under this = FAIL | Target range |
-|---|---|---|
-| Light (quick fix) | Under 80 | 80-120 |
-| Medium (multi-step) | Under 120 | 120-180 |
-| Heavy (testing, data, multiple approaches) | Under 150 | 180-300 |
-
-**Extended (1M):**
-
-| Session type | Under this = FAIL | Target range |
-|---|---|---|
-| Light (quick fix) | Under 120 | 120-200 |
-| Medium (multi-step) | Under 200 | 200-350 |
-| Heavy (testing, data, multiple approaches) | Under 250 | 300-600 |
+Use the **model-aware limits** from Step 4's Line Budget table above.
 
 If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin sections. Common culprits:
 - "Where We Are" has fewer than 10 bullets
@@ -576,26 +474,3 @@ mv {matching files} plans/handoffs/archive/
 **Archive, don't delete.** Old handoffs sometimes contain useful decisions/context. The `archive/` subdirectory keeps the active directory clean.
 
 ---
-
-## Rules
-
-1. **You run at ~75% context.** You have massive conversation history available. MINE IT. Every measurement, every failed approach, every decision, every code insight. On 1M context, 75% = ~750K tokens — mine deeper, write longer.
-2. **Hard minimum: 150 lines (standard) / 250 lines (1M extended)** for medium/heavy sessions. If under the minimum, you haven't mined deeply enough.
-3. **Split over 300 lines (standard) / 600 lines (1M extended).** Don't cram — split into parts and cross-reference.
-4. **Self-check is mandatory.** Step 4-CHECK must pass before proceeding. If it fails, fix the handoff.
-5. **WHY over WHAT.** Code is in git. Decisions, failed approaches, data, and reasoning are what get lost.
-6. **"What We Tried" is chronological and exhaustive.** Include EVERY approach, not just the final one.
-7. **"Evidence & Data" must have real numbers.** Never say "improved" — say "improved from 156.6 to 131.2 (error: 28.6 → 3.2)".
-8. **Prior session context flows in.** Check persistent memory and existing handoff files. Note what changed since last handoff.
-9. **"If you find yourself skimming, STOP."** Re-read the conversation. The value is in the details.
-10. **Quick Start is king.** First commands should restore full context (handoff + memory + key files).
-11. **Zero input required.** `/handoff` with no arguments must work perfectly.
-12. **Always ask to close.** Every handoff ends with the close session prompt.
-13. **Descriptive file names.** Names describe content, not increment counters.
-14. **No LATEST.md.** The paste prompt is the only resume mechanism.
-15. **Auto-handoffs are thinner.** If triggered by PreCompact, the file should be under 50 lines (standard) / 80 lines (1M extended) (emergency capture, not full mining).
-16. **Reference, don't inline.** Point to files and beads instead of copying their content.
-17. **No code snippets.** No API tables. No architecture diagrams. Those live in CLAUDE.md.
-18. **Chain continuity.** Every handoff must have valid Chain/Parent/Prior chain fields. Use bead/epic IDs as chain tags — no separate chain IDs needed. Resolution order: epic > beads (1-4) > most relevant beads (5+) > standalone hex fallback.
-19. **Paste prompt carries chain tag.** The ready-to-paste prompt must include `seq {N}, {chain_tag}` so the next session can detect the chain deterministically (Tier 1).
-20. **Use parallel agent teams.** Steps 1A, 1B-3/1B-4, and 5+6 have independent tasks — launch them as parallel agents in a single message. Do NOT run independent research sequentially. The main agent keeps conversation mining (1C) since only it has the history. See "Agent Strategy" section at top.
