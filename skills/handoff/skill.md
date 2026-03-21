@@ -7,13 +7,9 @@ triggers:
   - create a handoff
   - run handoff
   - save session context
-  - context running low
   - session handoff
   - save session progress
   - running out of context
-  - close this session with a handoff
-  - wrap up session with a handoff
-  - hand off this session
 argument-hint: [optional reason, e.g. "context low", "end of day"]
 ---
 
