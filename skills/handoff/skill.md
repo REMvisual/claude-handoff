@@ -196,10 +196,10 @@ File names must be **descriptive** — someone scanning the directory should imm
 
 Format: `HANDOFF_{chain_tag}_{slug}_{YYYY-MM-DD}.md`
 
-- **chain_tag:** The bead/epic ID from Step 1B-1 (e.g., `Audiophile-n6ji`). For multi-bead chains, use the primary bead only (the one most central to the work).
+- **chain_tag:** The bead/epic ID from Step 1B-1 (e.g., `myproject-n6ji`). For multi-bead chains, use the primary bead only (the one most central to the work).
 - **slug:** 2-4 word kebab-case summary of the topic
 - **Date:** `YYYY-MM-DD`
-- Example: `HANDOFF_Audiophile-n6ji_dsp-phase0-baseline-reset_2026-03-19.md`
+- Example: `HANDOFF_myproject-n6ji_dsp-phase0-baseline-reset_2026-03-19.md`
 
 **If beads are NOT available** (no beads installed, standalone hex fallback):
 
