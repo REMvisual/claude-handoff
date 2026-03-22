@@ -122,11 +122,34 @@ Merge results into "What We Tried", "Key Decisions", and "Stale References".
 - Don't try to guess what they were renamed to — just flag them. The next session will resolve it by reading actual code
 - If ALL identifiers check out, skip the section entirely — no noise
 
-### 1C: Conversation Mining Checklist
+### 1C: Conversation Mining
 
-**If arguments were provided** (check `$ARGUMENTS` above): use them as a soft hint for framing — they may suggest the epic name, the goal, or what the user considers most important. Let them guide your emphasis in "The Goal" and "Where We're Going" sections, but don't let them override what actually happened in the conversation. The conversation is ground truth; arguments are a lens, not a filter.
+**If arguments were provided** (check `$ARGUMENTS` above): use them as a soft hint for framing — they may suggest the epic name, the goal, or what the user considers most important. The conversation is ground truth; arguments are a lens, not a filter.
 
-Go through the ENTIRE conversation systematically. For each category, extract ALL relevant data:
+#### Context-Size Strategy
+
+Research shows LLMs exhibit a "lost in the middle" problem — 30%+ accuracy drop for information in the middle of long contexts, even at 1M token windows. Choose your mining strategy based on context size:
+
+**Tier 1 — Standard (under ~100K tokens used):**
+Single pass with the extraction checklist below. Cross-references preserved, no chunking needed.
+
+**Tier 2 — Large (~100K-500K tokens used):**
+Two passes:
+1. **Structured extraction** — Full checklist pass below. Include explicit instruction to yourself: "Pay special attention to decisions and measurements from the MIDDLE of this conversation."
+2. **Gap-filling sweep** — Review your Pass 1 output against the conversation. Ask: "What decisions, measurements, or failed approaches from the FIRST HALF are missing?"
+
+**Tier 3 — Massive (~500K+ tokens used, typical on 1M context models at 50-75%):**
+Map-reduce — a single pass at this scale demonstrably misses information from the middle ~50% of conversation.
+1. **Segment** the conversation mentally into 3-4 chronological chunks (~150-200K each). Use natural breakpoints (major topic shifts, user pivots, tool output clusters).
+2. **Per-chunk extraction** — Go through each chunk against the checklist below. Note which chunk each finding came from (early/mid/late session).
+3. **Merge + deduplicate** — Combine chunk outputs. Later decisions override earlier ones. Build chronological timeline.
+4. **Validation pass** — Scan the merged extraction: "What critical context is missing for a new agent to continue this work?"
+
+**How to estimate your tier:** If your system prompt says "1M context" and you've been working for a while with many tool calls, you're likely Tier 2 or 3. When in doubt, use Tier 2 (two passes). If the conversation has 50+ tool calls or you've been working for over an hour, assume Tier 3.
+
+#### Extraction Checklist
+
+For each category, extract ALL relevant data (applied per-chunk in Tier 3, or full-pass in Tier 1-2):
 
 - [ ] **Goals & objectives** — What was the user trying to achieve? What's the overarching epic?
 - [ ] **Work completed** — Every file modified, function changed, feature added, bug fixed. With specifics.
