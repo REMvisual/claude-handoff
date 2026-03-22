@@ -103,18 +103,22 @@ If found, read the **latest** matching file (highest seq number). This is a **co
 
 **If neither tier matches:** This is the **first handoff in a new chain**. Set `seq: 1`, `parent: none`.
 
-#### Step 1B-3 + 1B-4: Prior Context & Stale Reference Check (PARALLEL AGENTS)
+#### Step 1B-3 + 1B-4: Prior Context, Reference Docs & Stale Check (PARALLEL AGENTS)
 
 **Once chain tag is resolved from 1B-1/1B-2, launch in parallel:**
 
 | Agent | Task | Returns |
 |---|---|---|
 | OV Recall | `/memory-recall` with 2-3 keyword searches (feature name, bug area, key functions) | Prior decisions, failed approaches, earlier session context |
-| Parent Context | Read parent handoff header, extract chain/seq, list code identifiers | Parent summary + identifier list for stale check |
+| Parent Context (MUST READ FULL CONTENT) | Read the ENTIRE parent handoff file — not just the header. Extract: (1) The Goal, (2) Where We Are summary, (3) Key Decisions, (4) What We Tried entries, (5) Where We're Going (what was planned next), (6) Open Questions, (7) code identifiers for stale check | Full parent summary for "Since Last Handoff" section + identifier list |
+| Reference Docs | Scan for project bible/reference docs: `ls plans/*BIBLE* plans/*bible* *BIBLE* CLAUDE.md .claude/CLAUDE.md 2>/dev/null`. If found, read the doc and extract: project goals, architecture decisions, key constraints, vocabulary/terminology | Project context that grounds the handoff |
 | Stale Refs | Grep each identifier from parent against codebase | List of identifiers NOT found (stale) |
 
-Skip agents that don't apply (no OV → skip recall; no parent → skip Parent+Stale).
-Merge results into "What We Tried", "Key Decisions", and "Stale References".
+Skip agents that don't apply (no OV → skip recall; no parent → skip Parent+Stale; no bible → skip Reference Docs).
+
+**Parent cross-referencing is MANDATORY when a parent exists.** The agent MUST read the parent file's full content and produce a "Since Last Handoff" comparison showing: what was planned (parent's "Where We're Going") vs what actually happened, which open questions got answered, which risks materialized. This gives the next session a sense of trajectory, not just a snapshot.
+
+Merge results: parent context → "Since Last Handoff" section + "What We Tried" (include prior approaches). OV context → "Key Decisions". Reference doc context → "The Goal" framing. Stale refs → "Stale References" section.
 
 **Rules for stale references:**
 - Only check identifiers that look like code (backtick-quoted, in code blocks, or clearly a function/class/param name) — skip prose
@@ -267,9 +271,26 @@ Format:
 
 These names may have been renamed or removed since the parent handoff. Check the actual code for current names.}
 
+## Since Last Handoff
+
+{ONLY include if a parent handoff exists (seq > 1). Compare parent's plan vs reality:
+- What the parent's "Where We're Going" said to do next vs what actually happened
+- Which of the parent's "Open Questions" got answered (and how)
+- Which "Risks & Blockers" materialized or were resolved
+- Key trajectory shift: are we still on the same path or did priorities change?
+This gives the next session a sense of MOMENTUM, not just a snapshot. 3-8 bullets.
+If this is seq 1 (first in chain), OMIT this section entirely.}
+
+## Reference Documents
+
+{List any project bibles, architecture docs, or reference files that ground this work. Include path and a 1-line description of what it contains:
+- `plans/MAESTRO_ML_BIBLE.md` — Master reference for ML pipeline architecture and training strategy
+- `CLAUDE.md` — Project-specific instructions and conventions
+OMIT if no reference docs exist in the project.}
+
 ## The Goal
 
-{3-5 sentences. Overarching objective, why it matters, user's end state.}
+{3-5 sentences. Overarching objective, why it matters, user's end state. If a project bible exists, frame the goal in its context.}
 
 ## Where We Are
 
@@ -346,6 +367,9 @@ bd show {bead_id}
 
 # Prior context (if OV available)
 # /memory-recall {topic keywords}
+
+# Reference docs (bibles, architecture docs)
+{paths to project bibles or reference docs, if any}
 
 # Key files to read first
 {3-5 most important files for understanding current state}
