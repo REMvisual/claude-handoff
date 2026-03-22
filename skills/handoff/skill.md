@@ -126,26 +126,33 @@ Merge results into "What We Tried", "Key Decisions", and "Stale References".
 
 **If arguments were provided** (check `$ARGUMENTS` above): use them as a soft hint for framing — they may suggest the epic name, the goal, or what the user considers most important. The conversation is ground truth; arguments are a lens, not a filter.
 
-#### Context-Size Strategy
+#### Context-Size Strategy (MANDATORY — announce your tier before mining)
 
-Research shows LLMs exhibit a "lost in the middle" problem — 30%+ accuracy drop for information in the middle of long contexts, even at 1M token windows. Choose your mining strategy based on context size:
+**You MUST announce which tier you are using before starting extraction.** Write: "Mining at Tier N (reason)." This is not optional.
 
-**Tier 1 — Standard (under ~100K tokens used):**
-Single pass with the extraction checklist below. Cross-references preserved, no chunking needed.
+Research shows LLMs exhibit a "lost in the middle" problem — 30%+ accuracy drop for information in the middle of long contexts. A single extraction pass at 500K+ tokens demonstrably misses decisions, measurements, and failed approaches from the middle ~50% of conversation.
 
-**Tier 2 — Large (~100K-500K tokens used):**
+**Tier detection (use the first that matches):**
+- System prompt says "1M context" AND you've had 50+ tool calls or worked over an hour → **Tier 3**
+- System prompt says "1M context" OR conversation has been substantial (20+ tool calls) → **Tier 2**
+- Otherwise → **Tier 1**
+
+**Tier 1 — Standard (under ~100K tokens):**
+Single pass with the extraction checklist below.
+
+**Tier 2 — Large (~100K-500K tokens):**
 Two passes:
-1. **Structured extraction** — Full checklist pass below. Include explicit instruction to yourself: "Pay special attention to decisions and measurements from the MIDDLE of this conversation."
-2. **Gap-filling sweep** — Review your Pass 1 output against the conversation. Ask: "What decisions, measurements, or failed approaches from the FIRST HALF are missing?"
+1. **Structured extraction** — Full checklist pass. Force yourself: "Scan the MIDDLE third of this conversation for decisions and measurements I might skip."
+2. **Gap-filling sweep** — Review your extraction. Ask: "What from the FIRST HALF is missing? What user feedback from MID-SESSION did I skip?"
 
-**Tier 3 — Massive (~500K+ tokens used, typical on 1M context models at 50-75%):**
-Map-reduce — a single pass at this scale demonstrably misses information from the middle ~50% of conversation.
-1. **Segment** the conversation mentally into 3-4 chronological chunks (~150-200K each). Use natural breakpoints (major topic shifts, user pivots, tool output clusters).
-2. **Per-chunk extraction** — Go through each chunk against the checklist below. Note which chunk each finding came from (early/mid/late session).
-3. **Merge + deduplicate** — Combine chunk outputs. Later decisions override earlier ones. Build chronological timeline.
-4. **Validation pass** — Scan the merged extraction: "What critical context is missing for a new agent to continue this work?"
+**Tier 3 — Massive (~500K+ tokens):**
+Map-reduce — single pass WILL miss information at this scale.
+1. **Segment** the conversation into 3-4 chronological chunks. Use natural breakpoints.
+2. **Per-chunk extraction** — Run the FULL checklist against EACH chunk independently. Tag findings: (early/mid/late).
+3. **Merge + deduplicate** — Later decisions override earlier. Build chronological timeline.
+4. **Validation pass** — "What is missing for a new agent to continue? What comparison tables, cost data, or iteration histories did I skip?"
 
-**How to estimate your tier:** If your system prompt says "1M context" and you've been working for a while with many tool calls, you're likely Tier 2 or 3. When in doubt, use Tier 2 (two passes). If the conversation has 50+ tool calls or you've been working for over an hour, assume Tier 3.
+**Tier 3 specifically requires richer Evidence & Data.** Heavy sessions produce commit logs, cost tables, approach comparisons, iteration histories, status matrices, and raw data. ALL of these must be captured — they are the most expensive to re-derive. If your Evidence section has fewer than 3 tables or comparison data sets, you haven't mined deep enough.
 
 #### Extraction Checklist
 
@@ -275,7 +282,16 @@ These names may have been renamed or removed since the parent handoff. Check the
 
 ## Evidence & Data
 
-{ALL numbers, baselines, comparison tables, data file paths. Never say "improved" without how much. 8-20 bullets/tables. Skip if zero measurements.}
+{This section must contain ALL raw data from the session. Include:
+- Comparison tables (approach A vs B vs C with metrics)
+- Cost/budget tracking (what was spent, what remains)
+- Iteration histories (v1→v2→v3 with what changed and results)
+- Status matrices (N/M complete, per-item status)
+- Commit logs (hash + summary table for sessions with 5+ commits)
+- Benchmark numbers, accuracy percentages, error rates
+- Data file paths so next session can reference raw results
+Never say "improved" — say "improved from X to Y". Use markdown tables.
+8-20 items minimum. At Tier 3, expect 3+ tables. If you have fewer, go back and mine.}
 
 ## Code Analysis
 
