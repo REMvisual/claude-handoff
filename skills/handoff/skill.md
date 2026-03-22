@@ -483,11 +483,7 @@ After the file is written and confirmed, ask the user:
      Handoff: {handoff_filename}
      Bead(s): {bead_ids or "none"}
 
-     Generated with [Claude Code](https://claude.ai/code)
-     via [Happy](https://happy.engineering)
-
      Co-Authored-By: Claude <noreply@anthropic.com>
-     Co-Authored-By: Happy <yesreply@happy.engineering>
      ```
    - Show the user what was committed (file list + commit hash)
    - If working tree is already clean, say "Working tree clean — nothing to commit"
