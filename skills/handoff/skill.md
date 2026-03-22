@@ -195,12 +195,13 @@ Write to `{handoff_dir}/{filename}` using this structure.
 
 - If your draft is under the hard minimum, you haven't captured enough. Go back to Step 1C and re-mine the conversation.
 - **Light sessions** (quick fix, single feature) may go as low as the light session min — but only if the session was genuinely short.
-- **If data exceeds the split threshold:** Split into multiple files (use the same prefix from Step 3):
-  - `{filename_without_ext}_part1.md` — Session state, goals, where we are, what we tried
-  - `{filename_without_ext}_part2.md` — Evidence & data, test results, comparison tables, code analysis
-  - Link them: Part 1 header says `**See also:** part2 for evidence & data tables`
 
-**When in doubt, go longer.** It's cheaper to skip a section on reload than to re-discover lost context.
+**ALWAYS write a single file.** Only split if the FINISHED file exceeds the split threshold. Do NOT pre-split into "narrative" and "evidence" files — write everything into one file first, then split ONLY if the line count exceeds the threshold after writing. If splitting:
+  - `{filename_without_ext}_part1.md` — first half of sections
+  - `{filename_without_ext}_part2.md` — remaining sections
+  - Link them: Part 1 header says `**See also:** part2`
+
+**When in doubt, go longer.** One big file beats two small ones. It's cheaper to skip a section on reload than to re-discover lost context.
 
 ### Handoff Structure
 
