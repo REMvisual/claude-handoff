@@ -294,6 +294,7 @@ These names may have been renamed or removed since the parent handoff. Check the
 - Benchmark numbers, accuracy percentages, error rates
 - Data file paths so next session can reference raw results
 Never say "improved" — say "improved from X to Y". Use markdown tables.
+Include small raw data blocks (under 20 lines) that ARE primary evidence — ground truth annotations, reference configs, key YAML/JSON snippets. These are too expensive to re-derive and too important to just reference by path.
 8-20 items minimum. At Tier 3, expect 3+ tables. If you have fewer, go back and mine.}
 
 ## Code Analysis
