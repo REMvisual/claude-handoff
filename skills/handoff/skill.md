@@ -158,7 +158,7 @@ Map-reduce — single pass WILL miss information at this scale.
 
 **Tier 3 specifically requires richer Evidence & Data.** Heavy sessions produce commit logs, cost tables, approach comparisons, iteration histories, status matrices, and raw data. ALL of these must be captured — they are the most expensive to re-derive. If your Evidence section has fewer than 3 tables or comparison data sets, you haven't mined deep enough.
 
-**Tier 3 line count floor: 450 lines minimum.** A 10+ hour session with 100+ tool calls and 14 commits cannot be adequately captured in 350 lines. If your draft is under 450 lines at Tier 3, you are under-mining. Go back and add: commit log table, cost/budget tracking, iteration history tables, user feedback items, raw data comparisons. The 600-line ceiling exists — use it.
+**Tier 3 target: 800 lines. Minimum: 500.** A 10+ hour session with 100+ tool calls cannot be captured in 400 lines. Phase 1 (initial Write) will typically produce 350-450 lines. Phase 2 (gap research + Edit) should push it to 500-800. The ceiling exists — USE IT.
 
 #### Extraction Checklist
 
@@ -221,24 +221,30 @@ Write to `{handoff_dir}/{filename}` using this structure.
 
 | | Standard (200K) | Extended (1M) |
 |---|---|---|
-| **Target range** | 180-300 lines | 300-600 lines |
+| **Target (aim for ceiling)** | 300-400 lines | 500-800 lines |
 | **Hard minimum** | 150 lines | 250 lines |
 | **Light session min** | 80 lines | 120 lines |
-| **Split threshold** | 300 lines | 600 lines |
+| **Split threshold** | 400 lines | 800 lines |
 | **Auto-handoff (PreCompact)** | 50 lines | 80 lines |
 
-**Why bigger with 1M?** A 600-line handoff is ~0.5% of a 1M window — negligible context cost. More detail in the handoff = less re-discovery in the next session. The whole point is to trade cheap disk bytes for expensive re-investigation time.
+**Target the CEILING, not the floor.** An 800-line handoff on 1M context is ~0.7% of the window — negligible. More detail = less re-discovery. The cost of a handoff that's "too long" is near zero; the cost of one that's too short is hours of re-investigation.
 
-- If your draft is under the hard minimum, you haven't captured enough. Go back to Step 1C and re-mine the conversation.
-- **Light sessions** (quick fix, single feature) may go as low as the light session min — but only if the session was genuinely short.
+- If your draft is under the hard minimum, you haven't captured enough.
+- **Light sessions** (quick fix) may go as low as the light session min.
 
-**ONE FILE. ONE WRITE. NO EXCEPTIONS UNDER THE SPLIT THRESHOLD.**
+### Two-Phase Write Process
 
-You MUST call the Write tool exactly ONCE to create the handoff file. Do NOT write part1 then part2. Do NOT pre-split by topic (narrative vs evidence). Compose the ENTIRE handoff in your head, then write it as ONE file in ONE Write call. All sections — narrative, evidence tables, code analysis, everything — go in that single file.
+**Phase 1: Initial Write** — Compose and write the handoff as ONE file in ONE Write call. Include all sections — narrative, evidence, code analysis, everything. Do NOT pre-split into multiple files.
 
-After writing, count the lines. ONLY if the count exceeds the split threshold (300 standard / 600 extended) should you split into two files. This means: write one big file first, verify it's over threshold, THEN split. Under threshold = one file, period.
+**Phase 2: Gap Research & Expansion** — After writing, count the lines. Then do a GAP RESEARCH pass:
+1. Read back what you just wrote
+2. Scan the conversation for data you DIDN'T capture: tables you skipped, user feedback you missed, measurements without numbers, approaches mentioned but not detailed, raw data blocks not inlined
+3. Use the Edit tool to append missing content — additional evidence tables, expanded entries, inline data blocks, sections you compressed too aggressively
+4. Keep expanding until you approach the ceiling (400 standard / 800 extended)
 
-**When in doubt, go longer.** One big file beats two small ones.
+**The gap research pass is MANDATORY for Tier 2 and Tier 3.** At Tier 1, it's optional. The whole point is that your first write will miss things (especially from mid-conversation) — the second pass catches them.
+
+**Splitting:** ONLY split if the final file (after Phase 2 expansion) exceeds the split threshold. Under threshold = one file, period.
 
 ### Handoff Structure
 
@@ -395,11 +401,20 @@ After writing the handoff, count its lines and validate:
 
 ### 1. Line Count Check
 
-Use the **model-aware limits** from Step 4's Line Budget table above.
+Use the **model-aware limits** from Step 4's Line Budget table. **Target the ceiling, not the floor.**
 
-**Tier 3 override: If you announced Tier 3, the minimum is 450 lines — NOT 300.** A massive session (100+ tool calls, 10+ hours, many commits) cannot be captured under 450. If your file is 350-449 lines, you MUST go back and add: more evidence tables, user feedback items, iteration histories, commit logs, or approach comparisons. Do NOT proceed to Steps 5+6 until this check passes.
+| Tier | Minimum | Target ceiling | You MUST expand if under |
+|---|---|---|---|
+| Tier 1 (Standard) | 150 | 400 | 150 |
+| Tier 1 (Extended/1M) | 250 | 800 | 250 |
+| Tier 2 | 300 | 600 | 300 |
+| Tier 3 | 500 | 800 | 500 |
 
-If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin sections. Common culprits:
+**If under the "MUST expand" threshold:** Run Phase 2 (gap research). Read back your file, scan the conversation for uncaptured data, and use Edit to append. Do NOT proceed to Steps 5+6 until you're above the threshold.
+
+**If between threshold and ceiling:** Phase 2 is still recommended. There's almost certainly data you missed.
+
+If **FAIL**: Go back and expand thin sections. Common culprits:
 - "Where We Are" has fewer than 10 bullets
 - "What We Tried" is missing or has only 1-2 entries
 - "Evidence & Data" summarizes instead of giving actual numbers
@@ -482,6 +497,8 @@ After the file is written and confirmed, ask the user:
 
      Handoff: {handoff_filename}
      Bead(s): {bead_ids or "none"}
+
+     Generated with [Claude Code](https://claude.ai/code)
 
      Co-Authored-By: Claude <noreply@anthropic.com>
      ```
