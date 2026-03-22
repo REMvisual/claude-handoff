@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-03-21
+
+### Added
+- **Two-phase write process** — Phase 1 writes the handoff, Phase 2 reads it back and does gap research to expand with uncaptured evidence tables, measurements, and data. Mandatory for Tier 2+3. Breaks through the ~420-line single-Write generation ceiling.
+- **Parent cross-referencing** — "Since Last Handoff" section compares parent's plan vs what actually happened, answers parent's open questions, notes trajectory shifts
+- **Reference document scanning** — auto-detects project bibles, architecture docs, CLAUDE.md and lists them with descriptions
+- **Raised ceilings** — Extended target: 500-800 (was 300-600), Tier 3 target: 800, split at 800
+
+### Changed
+- Target the CEILING, not the floor — instructions now say "aim for 800" rather than "minimum 450"
+- Standard target raised to 300-400 (was 180-300)
+
+### Validated
+- 7 A/B test iterations on a 550K-token session. V7 (two-phase): 536 lines, 43 sections, 149 table rows, 88% data retention vs baseline. Phase 2 gap research added 91 lines of evidence tables.
+
 ## [1.3.0] - 2026-03-21
 
 ### Added
