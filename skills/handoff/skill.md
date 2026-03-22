@@ -226,12 +226,13 @@ Write to `{handoff_dir}/{filename}` using this structure.
 - If your draft is under the hard minimum, you haven't captured enough. Go back to Step 1C and re-mine the conversation.
 - **Light sessions** (quick fix, single feature) may go as low as the light session min — but only if the session was genuinely short.
 
-**ALWAYS write a single file.** Only split if the FINISHED file exceeds the split threshold. Do NOT pre-split into "narrative" and "evidence" files — write everything into one file first, then split ONLY if the line count exceeds the threshold after writing. If splitting:
-  - `{filename_without_ext}_part1.md` — first half of sections
-  - `{filename_without_ext}_part2.md` — remaining sections
-  - Link them: Part 1 header says `**See also:** part2`
+**ONE FILE. ONE WRITE. NO EXCEPTIONS UNDER THE SPLIT THRESHOLD.**
 
-**When in doubt, go longer.** One big file beats two small ones. It's cheaper to skip a section on reload than to re-discover lost context.
+You MUST call the Write tool exactly ONCE to create the handoff file. Do NOT write part1 then part2. Do NOT pre-split by topic (narrative vs evidence). Compose the ENTIRE handoff in your head, then write it as ONE file in ONE Write call. All sections — narrative, evidence tables, code analysis, everything — go in that single file.
+
+After writing, count the lines. ONLY if the count exceeds the split threshold (300 standard / 600 extended) should you split into two files. This means: write one big file first, verify it's over threshold, THEN split. Under threshold = one file, period.
+
+**When in doubt, go longer.** One big file beats two small ones.
 
 ### Handoff Structure
 
