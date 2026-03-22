@@ -372,6 +372,8 @@ After writing the handoff, count its lines and validate:
 
 Use the **model-aware limits** from Step 4's Line Budget table above.
 
+**Tier 3 override: If you announced Tier 3, the minimum is 450 lines — NOT 300.** A massive session (100+ tool calls, 10+ hours, many commits) cannot be captured under 450. If your file is 350-449 lines, you MUST go back and add: more evidence tables, user feedback items, iteration histories, commit logs, or approach comparisons. Do NOT proceed to Steps 5+6 until this check passes.
+
 If **FAIL**: Go back to Step 1C, re-mine the conversation, and expand thin sections. Common culprits:
 - "Where We Are" has fewer than 10 bullets
 - "What We Tried" is missing or has only 1-2 entries
