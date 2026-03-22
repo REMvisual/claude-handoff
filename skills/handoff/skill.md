@@ -154,6 +154,8 @@ Map-reduce — single pass WILL miss information at this scale.
 
 **Tier 3 specifically requires richer Evidence & Data.** Heavy sessions produce commit logs, cost tables, approach comparisons, iteration histories, status matrices, and raw data. ALL of these must be captured — they are the most expensive to re-derive. If your Evidence section has fewer than 3 tables or comparison data sets, you haven't mined deep enough.
 
+**Tier 3 line count floor: 450 lines minimum.** A 10+ hour session with 100+ tool calls and 14 commits cannot be adequately captured in 350 lines. If your draft is under 450 lines at Tier 3, you are under-mining. Go back and add: commit log table, cost/budget tracking, iteration history tables, user feedback items, raw data comparisons. The 600-line ceiling exists — use it.
+
 #### Extraction Checklist
 
 For each category, extract ALL relevant data (applied per-chunk in Tier 3, or full-pass in Tier 1-2):
@@ -312,6 +314,16 @@ Never say "improved" — say "improved from X to Y". Use markdown tables.
 
 ### Config
 - path/to/config — what changed}
+
+## User Feedback & Preferences (REQUIRED — never omit)
+
+{EVERY piece of direction the user gave this session. This section calibrates the next session's priorities and approach. Include:
+- Direct corrections ("drops should only be 2-4 bars")
+- Preferences expressed ("I don't like post-processing", "cost doesn't matter")
+- Frustrations ("the data is shit", "why is it splitting files")
+- Feature requests ("add editing tools to the dashboard")
+- Process feedback ("stop asking, just do it", "launch parallel agents")
+This is the user's VOICE. A new agent reading this knows what the user cares about, what annoys them, and how to calibrate their approach. 5-15 items minimum for heavy sessions.}
 
 ## Where We're Going
 
