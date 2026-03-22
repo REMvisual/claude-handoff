@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-21
+
+### Added
+- **Tiered context mining** — automatically selects extraction strategy based on context size:
+  - Tier 1 (<100K): single checklist pass
+  - Tier 2 (100-500K): two passes with middle-content gap-fill
+  - Tier 3 (500K+): map-reduce with per-chunk extraction, merge, and validation pass
+- **Mandatory tier announcement** — agent must declare "Mining at Tier N (reason)" before starting extraction
+- **Required "User Feedback & Preferences" section** — never omitted, captures the user's voice (corrections, frustrations, feature requests, process preferences)
+- **Raw data inlining** — Evidence section now includes small data blocks (<20 lines) like ground truth annotations and reference configs inline, not just by path reference
+- **Tier 3 line floor (450)** — massive sessions cannot be captured under 450 lines. Validation check enforces this and sends agent back to mine deeper if under floor
+
+### Fixed
+- **Premature file splitting** — agents were pre-splitting into "narrative" + "evidence" files even under the 600-line threshold. Now enforces ONE file, ONE Write call, no exceptions under threshold
+- **Trigger substring matching** — removed triggers containing "close this session" and "wrap up session" that fuzzy-matched casual conversation
+- **Validation check location** — Tier 3 floor was in mining instructions (Step 1C) but agent checked against Step 4 table. Moved floor override directly into Step 4-CHECK
+
+### Validated
+- 5 A/B test iterations on the same 550K-token session. Final version (V5): single file, 448 lines, 17 sections, user feedback restored, evidence tables present, Tier 3 announced and floor enforced
+
 ## [1.2.0] - 2026-03-20
 
 ### Fixed

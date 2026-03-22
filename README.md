@@ -62,12 +62,13 @@ See [`examples/`](examples/) for full sample handoff and plan files.
 
 The core skill. When you run `/handoff`, it:
 
-1. **Mines your conversation** using a 12-item checklist — goals, work completed, approaches tried, failed approaches, test results, decisions made, discoveries, code analysis, user preferences, remaining questions, and dependencies
-2. **Gathers external state** — git log, diff, uncommitted changes, active tasks from your tracker
-3. **Detects chain continuity** — finds prior handoffs in the same work stream via task IDs, inherits the chain tag and sequence number
-4. **Checks for stale references** — verifies that code identifiers from prior handoffs still exist in the codebase
-5. **Writes a validated file** — enforces line minimums (150+ for real sessions) and data completeness. If the first pass is too thin, it goes back and mines deeper
-6. **Generates a resume prompt** — a paste-ready one-liner for the next session
+1. **Detects context tier** — automatically selects mining strategy based on conversation size. At 500K+ tokens (common on 1M context models), LLMs exhibit a "lost in the middle" problem where 30%+ of information in the middle of context gets missed. The skill compensates with multi-pass map-reduce extraction
+2. **Mines your conversation** using a 12-item checklist — goals, work completed, approaches tried, failed approaches, test results, decisions made, discoveries, code analysis, user preferences, remaining questions, and dependencies
+3. **Gathers external state** — git log, diff, uncommitted changes, active tasks from your tracker (in parallel using agent teams)
+4. **Detects chain continuity** — finds prior handoffs in the same work stream via task IDs, inherits the chain tag and sequence number
+5. **Checks for stale references** — verifies that code identifiers from prior handoffs still exist in the codebase
+6. **Writes a validated file** — enforces line minimums and data completeness. Tier 3 (massive sessions) enforces a 450-line floor. If the first pass is too thin, it goes back and mines deeper
+7. **Generates a resume prompt** — a paste-ready one-liner for the next session
 
 Output: `HANDOFF_{slug}_{date}.md` in `plans/handoffs/` or `.claude/handoffs/`
 
@@ -97,6 +98,18 @@ HANDOFF_fix-auth_2026-03-17.md  (seq 1)
 ```
 
 Your third session on a feature knows about the first two. The resume prompt carries the chain tag and sequence number, so detection is automatic.
+
+### Context-aware mining (new in v1.3)
+
+At 500K+ tokens, a single extraction pass demonstrably misses decisions and measurements from the middle of conversation ([research](https://aclanthology.org/2024.tacl-1.9/)). The skill automatically selects a mining strategy:
+
+| Tier | Context size | Strategy |
+|---|---|---|
+| 1 | Under 100K | Single checklist pass |
+| 2 | 100K–500K | Two passes: structured extraction + gap-fill for middle content |
+| 3 | 500K+ | Map-reduce: chunk conversation, extract per-chunk, merge + validate |
+
+The tier is announced at the start of mining ("Mining at Tier 3 — 1M context, 100+ tool calls"). Tier 3 enforces a 450-line floor — massive sessions cannot be adequately captured in fewer lines.
 
 ### Self-validation
 
