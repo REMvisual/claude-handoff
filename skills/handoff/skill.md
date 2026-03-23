@@ -69,7 +69,7 @@ The chain tag identifies which work stream this handoff belongs to. It uses **ex
 
 1. **Epic exists** → use the epic name/ID as the chain tag. Epics are the most stable identifier — they outlive individual beads and naturally span many handoffs.
 
-2. **No epic, 1-4 beads** → use all bead IDs as the chain tag (e.g., `myproject-1abc, myproject-3def`). This is the common case for focused work.
+2. **No epic, 1-4 beads** → use all bead IDs as the chain tag (e.g., `myproject-xxxx, myproject-xxxx`). This is the common case for focused work.
 
 3. **No epic, 5+ beads** → pick the 2-3 beads most relevant to the primary work stream. Use your judgment based on what the session actually focused on.
 
@@ -86,7 +86,7 @@ Use the **two-tier detection** to find the parent handoff. Stop at the first tie
 
 Check how this session was started. If the user pasted a prompt like:
 ```
-Read `HANDOFF_myproject-1abc_foo_2026-03-19.md` (seq 2, myproject-1abc) and continue...
+Read `HANDOFF_myproject-xxxx_foo_2026-03-19.md` (seq 2, myproject-xxxx) and continue...
 ```
 Then you have the parent file directly. **Read that parent file's header** to get the chain tag and seq number. This is a **continuation** — inherit the chain tag, set seq = parent's seq + 1, set parent = that file.
 
@@ -196,10 +196,10 @@ File names must be **descriptive** — someone scanning the directory should imm
 
 Format: `HANDOFF_{chain_tag}_{slug}_{YYYY-MM-DD}.md`
 
-- **chain_tag:** The bead/epic ID from Step 1B-1 (e.g., `myproject-n6ji`). For multi-bead chains, use the primary bead only (the one most central to the work).
+- **chain_tag:** The bead/epic ID from Step 1B-1 (e.g., `myproject-xxxx`). For multi-bead chains, use the primary bead only (the one most central to the work).
 - **slug:** 2-4 word kebab-case summary of the topic
 - **Date:** `YYYY-MM-DD`
-- Example: `HANDOFF_myproject-n6ji_dsp-phase0-baseline-reset_2026-03-19.md`
+- Example: `HANDOFF_myproject-xxxx_dsp-phase0-baseline-reset_2026-03-19.md`
 
 **If beads are NOT available** (no beads installed, standalone hex fallback):
 
@@ -261,8 +261,8 @@ Write to `{handoff_dir}/{filename}` using this structure.
 
 {chain_tag examples:
   - Epic:    `BPM engine unification`
-  - Beads:   `myproject-1abc`
-  - Multi:   `myproject-1abc, myproject-3def`
+  - Beads:   `myproject-xxxx`
+  - Multi:   `myproject-xxxx, myproject-xxxx`
   - No bead: `standalone-a1b2c3d4`}
 
 ---
