@@ -16,11 +16,15 @@ argument-hint: [optional context about what to plan]
 **IMPORTANT: This skill writes files. You MUST NOT be in Claude Code's built-in plan mode.**
 If you are currently in plan mode, **exit plan mode first** (use ExitPlanMode) before proceeding. This skill produces plan *files* — it does not use Claude Code's plan mode feature. They are different things.
 
-**Step 1: Run `/handoff` to create the data file.**
+**Step 1: Run `/handoff` to create the data file — FULL TWO-PHASE PROCESS.**
 
-Execute the full `/handoff` skill first. This produces the handoff file with all session data, evidence, prior approaches, decisions, and code analysis. Wait for it to complete — you need the handoff file path and its content to write the plan.
+Execute the full `/handoff` skill first, including the **mandatory two-phase write process**:
+- **Phase 1:** Write the handoff file (all sections, narrative + evidence)
+- **Phase 2 (MANDATORY for Tier 2+3):** Read it back, scan conversation for uncaptured data, use Edit to expand toward the ceiling (800 lines for 1M context)
 
-**Do NOT skip or abbreviate the handoff.** The handoff is the data store. The plan is useless without it.
+This is not optional. The handoff is the data store — a thin handoff produces a thin plan. Follow the handoff skill's tier detection, line count checks, and gap research pass exactly as specified.
+
+**Do NOT skip or abbreviate the handoff.** Do NOT skip Phase 2. If the handoff is under 500 lines at Tier 3, you haven't mined deep enough — go back and expand before writing the plan.
 
 **Do NOT ask to close the session after the handoff.** Skip Step 8 of the handoff skill — the close prompt happens after the plan is written, not after the handoff.
 
