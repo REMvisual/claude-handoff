@@ -275,9 +275,18 @@ Engineer the handoff skill from a basic context-capture tool into a production-g
 - Main cuts: duplicate tables, compressed agent descriptions, removed Rules section
 - Over-compression of Evidence guidance caused data loss — had to restore
 
+## Post-Close Work (same session, continued)
+
+- **Beads initialized** in `C:\Standalone\claude-handoff\` — repo now has issue tracking
+- **Handoff file moved** to `plans/handoffs/` in the repo
+- **Reverse sync script created** — `~/.claude/scripts/sync-handoff-from-repo.sh` re-personalizes repo skill → local (adds back Audiophile, OV, Happy refs)
+- **Bidirectional sync confirmed working** — repo and local skills differ only by expected genericization transforms
+- **Leftover plan file cleaned** — `docs/superpowers/plans/2026-03-20-handoff-hotfix.md` removed (already executed)
+- **Workflow established:** Repo is source of truth. Edit there, run inbound sync to deploy to live skill.
+
 ## Session Closed
 **Closed at:** 2026-03-25
-**Commit:** 466d52d
+**Commit:** 466d52d + cf6c46d (post-close beads/handoff commit)
 **Session status:** Handed off to next session
 
 ## Quick Start for Next Session
