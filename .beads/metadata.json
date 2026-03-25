@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "claude_handoff",
+  "project_id": "6375f9ac-82d7-477d-9ec2-38eb50b0af56"
+}
