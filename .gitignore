@@ -5,3 +5,7 @@ Thumbs.db
 *~
 .claude/
 .env
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
