@@ -1,4 +1,6 @@
-# claude-handoff
+<p align="center">
+  <img src="assets/banner.svg" alt="claude-handoff" width="900"/>
+</p>
 
 **Never lose context between AI coding sessions.**
 

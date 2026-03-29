@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 250" fill="none">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="900" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a1035"/>
+      <stop offset="50%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#1a1035"/>
+    </linearGradient>
+    <linearGradient id="glow3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <filter id="softglow3">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="250" rx="12" fill="url(#bg3)"/>
+  <rect x="1" y="1" width="898" height="248" rx="11" fill="none" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.04">
+    <line x1="0" y1="62" x2="900" y2="62" stroke="#8b949e"/>
+    <line x1="0" y1="125" x2="900" y2="125" stroke="#8b949e"/>
+    <line x1="0" y1="188" x2="900" y2="188" stroke="#8b949e"/>
+    <line x1="225" y1="0" x2="225" y2="250" stroke="#8b949e"/>
+    <line x1="450" y1="0" x2="450" y2="250" stroke="#8b949e"/>
+    <line x1="675" y1="0" x2="675" y2="250" stroke="#8b949e"/>
+  </g>
+
+  <!-- LEFT: Chain links stacked compact -->
+  <g transform="translate(48, 42)" filter="url(#softglow3)">
+    <rect x="0" y="18" width="30" height="52" rx="15" fill="none" stroke="url(#glow3)" stroke-width="3.5"/>
+    <rect x="17" y="0" width="30" height="52" rx="15" fill="none" stroke="url(#glow3)" stroke-width="3.5"/>
+    <rect x="34" y="18" width="30" height="52" rx="15" fill="none" stroke="url(#glow3)" stroke-width="3.5"/>
+  </g>
+
+  <!-- /handoff terminal tucked under the chain -->
+  <g transform="translate(36, 118)">
+    <rect x="0" y="0" width="100" height="26" rx="5" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="10" y="17" font-family="'Cascadia Code', 'Fira Code', monospace" font-size="11" fill="#7c3aed">$</text>
+    <text x="20" y="17" font-family="'Cascadia Code', 'Fira Code', monospace" font-size="11" fill="#c9d1d9">/handoff</text>
+  </g>
+
+  <!-- Title -->
+  <text x="180" y="90" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="54" font-weight="800" fill="#f0f6fc" letter-spacing="-1">claude-handoff</text>
+
+  <!-- Tagline -->
+  <text x="180" y="125" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="18" fill="#8b949e">Never lose context between AI coding sessions.</text>
+
+  <!-- Badges row -->
+  <g transform="translate(180, 148)">
+    <rect x="0" y="0" width="55" height="22" rx="4" fill="#1f6feb"/>
+    <text x="27.5" y="15" font-family="monospace" font-size="11" fill="#fff" text-anchor="middle">MIT</text>
+
+    <rect x="63" y="0" width="120" height="22" rx="4" fill="#7c3aed"/>
+    <text x="123" y="15" font-family="monospace" font-size="11" fill="#fff" text-anchor="middle">Claude Code</text>
+
+    <rect x="191" y="0" width="105" height="22" rx="4" fill="#238636"/>
+    <text x="243.5" y="15" font-family="monospace" font-size="11" fill="#fff" text-anchor="middle">PRs Welcome</text>
+  </g>
+
+  <!-- Version -->
+  <text x="865" y="235" font-family="monospace" font-size="12" fill="#484f58" text-anchor="end">v1.4</text>
+</svg>
