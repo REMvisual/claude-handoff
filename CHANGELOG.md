@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-04-01
+
+### Added
+- **Anti-shadowing guard** — Skill now explicitly instructs Claude to never generate freeform handoff-like documents without invoking `/handoff`. Prevents "skill shadowing" where Claude improvises session summaries that borrow handoff vocabulary but lack chain tracking, self-validation, and comprehension gates.
+- **Expanded onboarding protocol** — Resume prompt now includes step 4: "explore 2-3 adjacent files not listed in the handoff." A/B testing showed the skill-based session missed a real bug (JWT secret mismatch) because it trusted the handoff's key files list exclusively. New step encourages exploration beyond listed files.
+- **Key files annotation** — Quick Start template now marks key files as "not exhaustive — explore adjacent code too" to set expectations.
+- **Comparison documentation** — `docs/COMPARISON_skill-vs-internal-handoff.md` with full A/B test data: same bug, same codebase, two sessions, one with skill handoff and one with Claude's auto-generated session summary. Evidence for the skill's value proposition.
+- **Setup guide for skill shadowing prevention** — README section with recommended `CLAUDE.md` snippet to catch cases where Claude generates freeform handoffs without invoking any skill.
+
+### Validated
+- Controlled A/B test: skill session proposed architecturally superior fix (server-side token store vs cookie band-aid), self-gated without user intervention, maintained chain awareness. Internal session found more bugs through aggressive exploration but required user intervention and proposed a weaker fix.
+
 ## [1.4.0] - 2026-03-21
 
 ### Added

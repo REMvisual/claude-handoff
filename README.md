@@ -57,6 +57,29 @@ Every handoff captures a structured snapshot of your session:
 
 See [`examples/`](examples/) for full sample handoff and plan files.
 
+## Why this exists (not just "what")
+
+Claude already tries to hand off context between sessions. When a session ends or context compresses, it generates a summary with sections like "What's broken" and "Next session paste-prompt." It looks like a handoff. It isn't one.
+
+We ran a controlled test: same P0 bug, same codebase, two fresh sessions launched simultaneously. One got Claude's auto-generated session summary. The other got a `/handoff` skill output. Both sessions had identical access to the code.
+
+| Dimension | Session summary (no skill) | `/handoff` skill output |
+|---|---|---|
+| **User had to intervene** | Yes — "don't alter anything yet" | No — self-gated, waited for go-ahead |
+| **Comprehension proof** | None — dove straight into code | Full narration of goal, state, prior attempts |
+| **Fix quality** | Cookie band-aid (patches symptom) | Server-side token store (fixes root cause) |
+| **Chain awareness** | Zero | Referenced prior session's analysis by name |
+| **Bug discovery** | Found 6 bugs (aggressive exploration) | Found 4 bugs (trusted handoff's file list) |
+| **Bead/task tracking** | Read bead but never claimed it | Explicitly claimed and linked |
+
+The skill session proposed a better architectural fix because it was forced to understand the problem first. The summary session read more code but understood less.
+
+Full comparison data: [`docs/COMPARISON_skill-vs-internal-handoff.md`](docs/COMPARISON_skill-vs-internal-handoff.md)
+
+### The skill shadowing problem
+
+Without explicit guardrails, Claude generates freeform "handoffs" that borrow the skill's vocabulary but lack its process — no chain tracking, no self-validation, no comprehension gates, no evidence mining. Users can't tell the difference without comparing side-by-side. See [Recommended setup](#recommended-prevent-skill-shadowing) below.
+
 ## How it works
 
 ### `/handoff` — Context capture
@@ -160,6 +183,21 @@ Beads gives handoffs their chain tags. OpenViking gives handoffs prior context. 
 
 - **Any CLI task tracker** — Linear, Jira CLI, GitHub Issues. The skill files use `bd` (beads) as a concrete example — swap in your tracker's CLI.
 - **Any memory/recall system** — the skills search for prior context automatically when a recall tool is available.
+
+## Recommended: Prevent skill shadowing
+
+Without this, Claude may generate freeform "handoffs" when sessions end — documents that look like skill output but lack chain tracking, validation, and comprehension gates. Add this to your global `~/.claude/CLAUDE.md` or project-level `CLAUDE.md`:
+
+```markdown
+## Handoffs
+
+When ending a session, saving progress, or providing context for a future session:
+- ALWAYS use the `/handoff` skill. NEVER generate handoff summaries, session status
+  documents, or "paste prompts for next session" without the skill.
+- The precompact hook handles automatic context compression — don't duplicate it manually.
+```
+
+The skill itself includes an anti-shadowing guard (v1.5.0+), but the `CLAUDE.md` instruction catches the case where Claude decides to "help" without invoking any skill at all.
 
 ## Customization
 
