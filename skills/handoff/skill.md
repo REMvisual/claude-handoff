@@ -20,6 +20,8 @@ If you are currently in plan mode, **exit plan mode first** (use ExitPlanMode) b
 
 **TRIGGER GUARD: Do NOT execute this skill if the user is merely _discussing_ handoffs, editing handoff files, or referencing the handoff skill in conversation.** This skill should ONLY run when the user explicitly wants to CREATE a handoff right now — i.e., they are requesting to save session state and potentially close. If the context is ambiguous (e.g., "let's talk about the handoff skill", "update the handoff format", "what does the handoff do"), do NOT run the skill — just respond normally. When in doubt, ask: "Did you want me to create a handoff now, or are we just discussing it?"
 
+**ANTI-SHADOWING: NEVER generate handoff-like documents without this skill.** When ending a session, providing context for a future session, or responding to "wrap up" / "we're done" / "save progress" — you MUST invoke `/handoff`. Do NOT improvise session summaries, paste prompts, or "next session" briefings freeform. Claude's general training includes the concept of handoffs, and without this guard, sessions produce inferior documents that borrow handoff vocabulary (e.g., "next session paste-prompt", structured sections) but lack chain tracking, self-validation, comprehension gates, and evidence mining. The result looks like a handoff but misses critical structure — confusing for users who can't distinguish skill-quality output from freeform summaries.
+
 You are creating a structured handoff document that preserves session context for the next session with **minimal context cost on reload**.
 
 **This skill typically runs at ~75% context usage** — you have a LOT of conversation history to mine. Use it. The whole point is to extract maximum value from the session before closing. On a 1M context model, 75% means ~750K tokens of history — significantly more to mine and significantly more room in the handoff file.
@@ -377,7 +379,7 @@ bd show {bead_id}
 # Reference docs (bibles, architecture docs)
 {paths to project bibles or reference docs, if any}
 
-# Key files to read first
+# Key files to read first (not exhaustive — explore adjacent code too)
 {3-5 most important files for understanding current state}
 
 # Evidence / data files
@@ -525,7 +527,8 @@ After the file is written and confirmed, ask the user:
    1. Read the handoff file and summarize what you understand (goal, current state, what was tried)
    2. Show which bead(s) you're claiming and what phase/step you're starting
    3. State what you'll verify first (run tests, check baselines, read key files)
-   4. Explain your planned first action and why
+   4. Read the listed key files, then explore 2-3 adjacent files (configs, shared utils, related modules) not listed — the handoff captures what the previous session focused on, not everything that matters
+   5. Explain your planned first action and why
    Then wait for my go-ahead before executing.
    -------------------------------------------------------
    ```
