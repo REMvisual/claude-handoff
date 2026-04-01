@@ -234,7 +234,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT](LICENSE)
 
-If this tool saved you time, [give it a star](https://github.com/REMvisual/claude-workspace-snapshot). It helps others find it.
+If this tool saved you time, [give it a star](https://github.com/REMvisual/claude-handoff). It helps others find it.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-blueviolet.svg)](https://claude.ai/code)

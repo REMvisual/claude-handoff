@@ -262,7 +262,7 @@ Write to `{handoff_dir}/{filename}` using this structure.
 **Prior chain:** `{file1}` > `{file2}` > ... > this  (or "none — first in chain")
 
 {chain_tag examples:
-  - Epic:    `BPM engine unification`
+  - Epic:    `authentication-overhaul`
   - Beads:   `myproject-xxxx`
   - Multi:   `myproject-xxxx, myproject-xxxx`
   - No bead: `standalone-a1b2c3d4`}

@@ -1,7 +1,7 @@
 # Handoff Skill vs Internal Session Summary: Side-by-Side Comparison
 
 **Date:** 2026-04-01
-**Test conditions:** Same P0 bug (Electron OAuth session transfer), same codebase (VoidGram v3.1.0), two fresh Claude Code sessions launched simultaneously with different resume prompts.
+**Test conditions:** Same P0 bug (Electron OAuth session transfer), same codebase (ExampleApp v3.1.0), two fresh Claude Code sessions launched simultaneously with different resume prompts.
 
 ## Setup
 
@@ -18,7 +18,7 @@
 | **User intervention needed?** | YES — user had to say "don't alter anything just yet" | No — waited for go-ahead as instructed |
 | **Exploration rounds** | 5 rounds of searching/reading (chaotic, undirected) | 1 structured pass after onboarding |
 | **Comprehension proof** | None — went straight to code analysis | Full narration: goal, current state, what was tried, root cause |
-| **Bead tracking** | Read the bead but never claimed it | Explicitly claimed VoidGram-gyy |
+| **Bead tracking** | Read the bead but never claimed it | Explicitly claimed PROJ-abc1 |
 | **Chain awareness** | Zero — no mention of seq, parent, or prior handoffs | Referenced "Option 3 (Best UX) from the handoff" — understood prior session's analysis |
 | **Thinking time** | Scattered across multiple tool calls | "Cogitated for 51s" — deep upfront thinking |
 | **Ready state** | "Ready to implement when you say go" (after being stopped) | "Waiting for your go-ahead before executing" (self-gated) |
