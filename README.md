@@ -7,7 +7,6 @@
 Session handoff skills for [Claude Code](https://claude.ai/code) that capture decisions, failed approaches, measurements, and next steps — so your next session picks up exactly where you left off. Save context, use fewer tokens, and stop wasting 20-40% of each session rediscovering what was already tried.
 
 [![Download Latest](https://img.shields.io/github/v/release/REMvisual/claude-handoff?style=for-the-badge&label=Download&color=blue)](https://github.com/REMvisual/claude-handoff/releases/latest)
-[![Total Downloads](https://img.shields.io/github/downloads/REMvisual/claude-handoff/total?style=for-the-badge)](https://github.com/REMvisual/claude-handoff/releases)
 ![Views](https://komarev.com/ghpvc/?username=REMvisual-handoff&label=Views&color=brightgreen&style=for-the-badge)
 
 ## Install
