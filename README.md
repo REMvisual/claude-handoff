@@ -61,18 +61,19 @@ See [`examples/`](examples/) for full sample handoff and plan files.
 
 Claude already tries to hand off context between sessions. When a session ends or context compresses, it generates a summary with sections like "What's broken" and "Next session paste-prompt." It looks like a handoff. It isn't one.
 
-We ran a controlled test: same P0 bug, same codebase, two fresh sessions launched simultaneously. One got Claude's auto-generated session summary. The other got a `/handoff` skill output. Both sessions had identical access to the code.
+We ran a controlled test: same P0 bug, same codebase, three fresh Claude Code sessions. One got Claude's auto-generated session summary. One got a v1.4 `/handoff` output. One got a v1.5 `/handoff` output (with expanded onboarding). All sessions had identical access to the code.
 
-| Dimension | Session summary (no skill) | `/handoff` skill output |
-|---|---|---|
-| **User had to intervene** | Yes — "don't alter anything yet" | No — self-gated, waited for go-ahead |
-| **Comprehension proof** | None — dove straight into code | Full narration of goal, state, prior attempts |
-| **Fix quality** | Cookie band-aid (patches symptom) | Server-side token store (fixes root cause) |
-| **Chain awareness** | Zero | Referenced prior session's analysis by name |
-| **Bug discovery** | Found 6 bugs (aggressive exploration) | Found 4 bugs (trusted handoff's file list) |
-| **Bead/task tracking** | Read bead but never claimed it | Explicitly claimed and linked |
+| Dimension | Session summary (no skill) | `/handoff` v1.4 | `/handoff` v1.5 |
+|---|---|---|---|
+| **User had to intervene** | Yes — "don't alter anything yet" | No — self-gated | No — self-gated |
+| **Comprehension proof** | None — dove into code | Full narration | Full narration + deeper root cause |
+| **Root cause precision** | Surface-level | Architectural | Precise call chain |
+| **Fix correctness** | Correct but unjustified | Correct but heavy | Correct and justified |
+| **Adjacent exploration** | Chaotic, found real bugs | None beyond handoff | Structured, found real gaps |
+| **Thinking time** | Scattered | 51s cogitation | 2m 24s cogitation |
+| **Chain awareness** | Zero | Referenced prior analysis | Referenced prior analysis |
 
-The skill session proposed a better architectural fix because it was forced to understand the problem first. The summary session read more code but understood less.
+The v1.5 session traced the complete failure call chain, proposed the simplest correct fix with full justification, and found bugs the handoff didn't list — all without user intervention. The internal session proposed the same fix but couldn't explain why it worked.
 
 Full comparison data: [`docs/COMPARISON_skill-vs-internal-handoff.md`](docs/COMPARISON_skill-vs-internal-handoff.md)
 
