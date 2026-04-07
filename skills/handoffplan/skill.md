@@ -4,10 +4,10 @@ description: Run /handoff to capture session data, then write a phased implement
 user_invocable: true
 triggers:
   - handoffplan
+  - handoff with a plan
   - make this into a plan
-  - create a plan
+  - create a plan and handoff
   - plan this out
-  - plan mode
 argument-hint: [optional context about what to plan]
 ---
 
@@ -28,9 +28,15 @@ This is not optional. The handoff is the data store — a thin handoff produces 
 
 **Do NOT ask to close the session after the handoff.** Skip Step 8 of the handoff skill — the close prompt happens after the plan is written, not after the handoff.
 
-**Do NOT enter Claude Code plan mode at any point.** Both files are regular file writes.
+**Do NOT enter Claude Code plan mode at any point.** This skill writes files and commits. Plan mode is not used.
+
+**This skill creates a plan for the NEXT session to execute.** The handoff captures data. The plan defines work. Beads track phases. Then you commit, close, and give the user a paste prompt that tells the next session to start executing Phase 1 immediately — no onboarding, no exploration, just code. The next session gets full clean context because it's a fresh session.
 
 **Arguments:** $ARGUMENTS
+
+---
+
+**CHECKPOINT before Step 2:** Count the handoff's lines. Check its tier minimum (Tier 1: 150/250, Tier 2: 300, Tier 3: 500 — see handoff skill's Line Budget table). If the handoff is under its tier minimum, STOP. Run the handoff's Phase 2 gap research pass now — read back what you wrote, scan the conversation for uncaptured data, and Edit to expand. Do not proceed to the plan with a thin handoff. The plan's quality is bounded by the handoff's quality.
 
 ---
 
@@ -196,40 +202,51 @@ Tell the user concisely:
 - The "First Action" from Quick Start
 - Beads created for each phase (if available)
 
-**Step 6: Ask to activate the plan.**
+**Step 6: Commit and close.**
 
-> **Handoff + Plan complete.** Ready to start the plan?
->
-> - **Yes** — I'll enter plan mode with the plan loaded so you can review and execute
-> - **No** — Files saved, we'll continue working as-is
+This skill always closes the session. The next session executes the plan with full clean context.
 
-**If YES:**
-
-1. **Output the following message EXACTLY before calling EnterPlanMode** — this is the last thing the user sees before context clears, and it primes what happens next:
-
+1. **Commit all session work:**
+   ```bash
+   git status -s
+   git diff --stat
    ```
-   Entering plan mode to clear context. When plan mode starts, I will:
-   1. Read `{plan_file_path}` and present it verbatim as the plan
-   2. Create tasks for each phase
-   3. NOT explore or research — the plan is already complete
+   Stage all changed/new files relevant to this session's work, then commit:
+   ```
+   session: {slug} [{chain_tag}]
 
-   If you see me exploring instead of presenting the plan, tell me: "Just read the plan file."
+   {One-line summary of what this session accomplished}
+
+   Handoff: {handoff_filename}
+   Plan: {plan_filename}
+   Bead(s): {bead_ids or "none"}
+
+   Generated with [Claude Code](https://claude.ai/code)
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   ```
+   Be surgical — only commit files related to this session's work. If `git status` shows unrelated changes from other sessions, mention them but don't commit them.
+
+2. **Output the ready-to-paste prompt:**
+   ```
+   -------------------------------------------------------
+   PASTE THIS INTO YOUR NEXT SESSION:
+   -------------------------------------------------------
+   Read `{plan_file_path}` and `{handoff_file_path}` (seq {N}, {chain_tag}).
+   Execute the plan starting at Phase 1. Beads are already created with dependencies.
+
+   Your first three actions:
+   1. Read the plan file and claim Phase 1: `bd update {phase1_bead} --claim`
+   2. Read the source files listed in the plan's Quick Start
+   3. Start coding Phase 1's first concrete action: {first_action}
+
+   For phases the plan marks as parallelizable, use the Agent tool to run them concurrently in worktrees.
+
+   Do NOT onboard, explore, or ask questions. The plan has everything. Build.
+   -------------------------------------------------------
    ```
 
-2. **Enter Claude Code plan mode** using EnterPlanMode (it takes no arguments — just call it).
-
-3. Once in plan mode, your **ONLY job** is:
-   a. **Read the PLAN file** using the Read tool.
-   b. **Present its content verbatim** as your plan. Copy-paste the entire file contents — do NOT summarize, rewrite, condense, or edit the plan.
-   c. **Create tasks for each phase** using TaskCreate — one task per phase from the plan (e.g. "Phase 1: {name}", "Phase 2: {name}").
-
-   **CRITICAL: Do NOT explore the codebase. Do NOT launch Explore agents. Do NOT research anything. Do NOT "verify" code locations. The plan is already written and complete. Your only action is: Read the file → present it → create tasks. Nothing else.**
-
-4. The user exits plan mode when ready, and you start executing Phase 1 (marking its task in_progress).
-
-No session close, no paste prompt. The user is staying in this session to execute the plan.
-
-**If NO:** "Files saved. When you're ready, say 'enter plan mode' or start Phase 1 directly."
+3. Tell the user: "Session closed. Paste that into a fresh session to start executing Phase 1 with full context."
 
 ---
 
@@ -243,5 +260,6 @@ No session close, no paste prompt. The user is staying in this session to execut
 6. **Success criteria use baseline numbers.** Reference the handoff's Evidence & Data section.
 7. **Rollback per phase.** Every phase must say what to revert if it makes things worse.
 8. **Same naming for paired files.** Mirror the handoff filename: `HANDOFF_Proj-abc_foo_date.md` + `PLAN_Proj-abc_foo_date.md` (or without chain tag if no beads).
-9. **Don't close after handoff.** Close prompt happens after the plan, not after the handoff.
+9. **Always close the session.** This skill mines, plans, and closes. The next session executes with full clean context. Don't try to execute in the same session — context is exhausted from mining.
 10. **Chain metadata propagates.** The PLAN file must copy the Chain line from its paired HANDOFF file. Same chain-id, same seq. This lets cleanup find both files together.
+11. **The paste prompt is an execution prompt, not an onboarding prompt.** The difference between `/handoff` and `/handoffplan` is what the next session does. After `/handoff`, the next session onboards and explores. After `/handoffplan`, the next session reads the plan and starts coding Phase 1 immediately.
