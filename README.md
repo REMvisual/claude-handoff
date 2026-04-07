@@ -55,7 +55,7 @@ Every handoff captures a structured snapshot of your session:
 
 **"What We Tried" is the most valuable section.** Failed approaches are the single most expensive thing to rediscover across sessions. This section captures every attempt — what was tried, what happened, and why it was kept or abandoned — so the next session never repeats work.
 
-See [`examples/`](examples/) for full sample handoff and plan files.
+Run `/handoff` in any Claude Code session to see the output format.
 
 ## Why this exists (not just "what")
 
@@ -75,7 +75,7 @@ We ran a controlled test: same P0 bug, same codebase, three fresh Claude Code se
 
 The v1.5 session traced the complete failure call chain, proposed the simplest correct fix with full justification, and found bugs the handoff didn't list — all without user intervention. The internal session proposed the same fix but couldn't explain why it worked.
 
-Full comparison data: [`docs/COMPARISON_skill-vs-internal-handoff.md`](docs/COMPARISON_skill-vs-internal-handoff.md)
+Full comparison data was collected across controlled A/B tests with the same P0 bug and codebase.
 
 ### The skill shadowing problem
 
@@ -232,10 +232,6 @@ rm -f ~/.claude/hooks/precompact-handoff.sh
 ```
 
 Handoff files in your projects are yours to keep or delete.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
