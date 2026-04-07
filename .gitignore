@@ -6,6 +6,9 @@ Thumbs.db
 .claude/
 .env
 
+# Beads credential key (never commit)
+.beads/.beads-credential-key
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db

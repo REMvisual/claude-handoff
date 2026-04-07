@@ -15,12 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clearer skill identity** — Top-level description now explicitly states: this skill creates a plan for the NEXT session to execute. The handoff captures data, the plan defines work, beads track phases, then you close and hand off.
 
 ### Fixed — `/handoffplan`
-- **Plan approved → session closed instead of executing** — In v1.5.0, after the user approved the plan, the assistant would close the session and write a paste prompt instead of executing Phase 1. This happened in 3/3 tested sessions across two different projects (CurveTool, VoidGram). Root cause: the `/handoff` skill's 50+ lines of close protocol overwhelmed the single-line "don't close" instruction. Fix: acknowledged that same-session execution after heavy Tier 3 mining is impractical (context exhausted), and redesigned the flow to always close with an execution-focused paste prompt.
+- **Plan approved → session closed instead of executing** — In v1.5.0, after the user approved the plan, the assistant would close the session and write a paste prompt instead of executing Phase 1. This happened in 3/3 tested sessions across two different projects. Root cause: the `/handoff` skill's 50+ lines of close protocol overwhelmed the single-line "don't close" instruction. Fix: acknowledged that same-session execution after heavy Tier 3 mining is impractical (context exhausted), and redesigned the flow to always close with an execution-focused paste prompt.
 - **Contradictory plan mode instructions** — Skill said "Do NOT enter plan mode at any point" (line 32) then later said "Enter plan mode" (Step 6). Fixed by removing plan mode entirely.
 - **Beads not created** — Step 3 (create beads for phases) was skipped in the first failure case. The handoff quality gate and clearer step ordering address this.
-
-### Added
-- **Test case documentation** — `examples/FAILURE_curvetool-plan-not-executed_2026-04-01.md` and `examples/FAILURE_voidgram-plan-not-executed_2026-04-06.md` document the exact failure mode with transcripts, root cause analysis, and what was fixed. `examples/v1-output/` preserves the v1 handoff and plan output for comparison.
 
 ### Changed — README
 - **`/handoffplan` section expanded** — Now explains the difference from `/handoff`: after `/handoff` the next session explores, after `/handoffplan` the next session executes Phase 1 immediately.
