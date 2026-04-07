@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="claude-handoff" width="900"/>
+  <img src="banner.png" alt="claude-handoff" width="900"/>
 </p>
 
 **Never lose context between AI coding sessions.**
