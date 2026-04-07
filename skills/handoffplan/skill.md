@@ -235,10 +235,12 @@ This skill always closes the session. The next session executes the plan with fu
    Read `{plan_file_path}` and `{handoff_file_path}` (seq {N}, {chain_tag}).
    Execute the plan starting at Phase 1. Beads are already created with dependencies.
 
-   Your first three actions:
-   1. Read the plan file and claim Phase 1: `bd update {phase1_bead} --claim`
-   2. Read the source files listed in the plan's Quick Start
-   3. Start coding Phase 1's first concrete action: {first_action}
+   Your first actions:
+   1. Read the plan file
+   2. Create a task for each phase (TaskCreate) so you can track progress
+   3. Claim Phase 1: `bd update {phase1_bead} --claim`
+   4. Read the source files listed in the plan's Quick Start
+   5. Start coding Phase 1's first concrete action: {first_action}
 
    For phases the plan marks as parallelizable, use the Agent tool to run them concurrently in worktrees.
 
