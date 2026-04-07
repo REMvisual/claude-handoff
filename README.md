@@ -97,16 +97,21 @@ The core skill. When you run `/handoff`, it:
 
 Output: `HANDOFF_{slug}_{date}.md` in `plans/handoffs/` or `.claude/handoffs/`
 
-### `/handoffplan` — Context capture + action plan
+### `/handoffplan` — Context capture + execution plan
 
-Runs the full `/handoff` first, then writes a paired implementation plan:
+Use this when you've finished a research or design phase and know what needs to be built. Runs the full `/handoff` first, then writes a paired implementation plan and creates tracked tasks with dependencies.
 
+**The difference:** After `/handoff`, the next session onboards and explores — it reads what happened and figures out what to do. After `/handoffplan`, the next session executes immediately — the plan tells it exactly what to build, in what order, starting with Phase 1.
+
+The plan includes:
 - **Phased steps** grounded in session evidence — every phase traces to findings from the handoff
 - **Anti-goals** — what NOT to do, pulled from failed approaches and rejected alternatives
 - **Rollback strategy** per phase — what to revert if things get worse
 - **Success criteria** with baseline numbers from the handoff data
+- **Task tracking** — beads (or your tracker) with dependency chains between phases
+- **Execution paste prompt** — tells the next session to claim Phase 1 and start coding, not to explore
 
-Output: `PLAN_{slug}_{date}.md` paired with the handoff file
+Output: `PLAN_{slug}_{date}.md` paired with the handoff file, plus tracked tasks per phase
 
 ### PreCompact hook — Safety net
 
@@ -176,6 +181,7 @@ Everything is optional — the skills work standalone and degrade gracefully. Bu
 Beads       → tracks WHAT work needs doing (issues, deps, priorities)
 OpenViking  → remembers WHAT was learned (decisions, patterns, gotchas)
 Handoff     → captures WHERE you stopped (state, evidence, next steps)
+Handoffplan → defines HOW to continue (phased plan, tasks, execution prompt)
 ```
 
 Beads gives handoffs their chain tags. OpenViking gives handoffs prior context. Together, a new session can reconstruct the full picture: what's assigned, what was tried before, and exactly where to pick up.

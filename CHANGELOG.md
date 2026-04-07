@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-04-06
+
+### Changed — `/handoffplan`
+- **Removed plan mode dependency** — `/handoffplan` no longer enters Claude Code's built-in plan mode. Plan mode doesn't clear context as assumed, so the skill now commits and closes like `/handoff`, giving the next session full clean context for execution.
+- **Execution paste prompt** — The paste prompt now tells the next session to read the plan, claim Phase 1, and start coding immediately — three prescribed actions, no onboarding or exploration. This is the key difference from `/handoff`: the next session executes, not explores.
+- **Handoff quality gate** — Hard checkpoint between handoff and plan writing. If the handoff is under its tier minimum (500 lines for Tier 3), the skill stops and forces gap research expansion before proceeding. Previously this was a suggestion that got skipped.
+- **Removed "plan mode" trigger** — The trigger phrase "plan mode" was hijacking Claude Code's built-in plan mode feature. Replaced with "handoff with a plan" and "create a plan and handoff".
+- **Clearer skill identity** — Top-level description now explicitly states: this skill creates a plan for the NEXT session to execute. The handoff captures data, the plan defines work, beads track phases, then you close and hand off.
+
+### Fixed — `/handoffplan`
+- **Plan approved → session closed instead of executing** — In v1.5.0, after the user approved the plan, the assistant would close the session and write a paste prompt instead of executing Phase 1. This happened in 3/3 tested sessions across two different projects (CurveTool, VoidGram). Root cause: the `/handoff` skill's 50+ lines of close protocol overwhelmed the single-line "don't close" instruction. Fix: acknowledged that same-session execution after heavy Tier 3 mining is impractical (context exhausted), and redesigned the flow to always close with an execution-focused paste prompt.
+- **Contradictory plan mode instructions** — Skill said "Do NOT enter plan mode at any point" (line 32) then later said "Enter plan mode" (Step 6). Fixed by removing plan mode entirely.
+- **Beads not created** — Step 3 (create beads for phases) was skipped in the first failure case. The handoff quality gate and clearer step ordering address this.
+
+### Added
+- **Test case documentation** — `examples/FAILURE_curvetool-plan-not-executed_2026-04-01.md` and `examples/FAILURE_voidgram-plan-not-executed_2026-04-06.md` document the exact failure mode with transcripts, root cause analysis, and what was fixed. `examples/v1-output/` preserves the v1 handoff and plan output for comparison.
+
+### Changed — README
+- **`/handoffplan` section expanded** — Now explains the difference from `/handoff`: after `/handoff` the next session explores, after `/handoffplan` the next session executes Phase 1 immediately.
+- **Stack diagram updated** — Added Handoffplan as its own line: "defines HOW to continue (phased plan, tasks, execution prompt)".
+
 ## [1.5.0] - 2026-04-01
 
 ### Added
