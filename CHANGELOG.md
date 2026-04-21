@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-04-21
+
+### Changed — `/handoff` architecture
+- **Progressive disclosure.** Monolithic `skill.md` (7,138 tokens) split into a ~2,700-token core + four on-demand `references/` files (`output-template.md`, `mining-deep-chunked.md`, `validation.md`, `close-session.md`). Loaded only when relevant. Typical invocation cost drops ~30%.
+- **Agent discipline for Step 1A.** Was "judgment based on complexity." Now hard rule: parallel Bash only, never subagents, for git/beads/ls calls. Saves 15–45K tokens per run by blocking subagent bootup on cheap external-state checks.
+- **Phase 1 baseline enforcement.** Phase 1 MUST hit the pass minimum on first Write (Quick 150/250, Deep 300+, Chunked 500+). Phase 2 is strictly for gap-filling, not for reaching baseline. Previous ambiguity produced 210-line Phase 1 outputs that needed 5+ Edit expansions.
+
+### Changed — `/handoff` pass names
+- **Mining tiers renamed.** `Tier 1/2/3` → `Quick/Deep/Chunked`. Non-numeric names eliminate the collision with chain `seq N` (observed bug: user interpreted "Mining at Tier 2" as "seq 2 in chain").
+
+### Changed — `/handoff` chain detection
+- **Bead-scan semantic check.** A shared bead is now a CANDIDATE, not proof of chain continuation. Before claiming a parent, the skill reads the candidate's "Where We're Going" and checks whether current work is a direct follow-on. Otherwise treats as new chain with a `## Related Handoffs` reference section. Prevents false-positive chains when one bead hosts multiple work streams.
+- **Auto-handoff filter.** Precompact hook-generated handoffs now carry `**Auto:** true` header; Step 1B-B grep filters them out during chain detection.
+
+### Changed — `/handoffplan`
+- Updated pass naming throughout (`Tier` → `Quick`/`Deep`/`Chunked`).
+
+### Migration
+Re-install from source to get the new `references/` directory:
+```bash
+rm -rf ~/.claude/skills/handoff
+cp -r claude-handoff/skills/handoff ~/.claude/skills/
+```
+
 ## [1.6.0] - 2026-04-06
 
 ### Changed — `/handoffplan`
