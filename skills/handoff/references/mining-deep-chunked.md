@@ -29,7 +29,15 @@ If your Evidence section has fewer than 3 tables or comparison data sets, you ha
 - **Chunked target:** 800 lines (1M context). Minimum: 500.
 - **Deep target:** 600 lines. Minimum: 300.
 
-A 10+ hour session with 100+ tool calls cannot be captured in 400 lines. Phase 1 (initial Write) typically produces 350-450 lines. Phase 2 (gap research + Edit) should push to 500-800. The ceiling exists — USE IT.
+A 10+ hour session with 100+ tool calls cannot be captured in 400 lines.
+
+**Phase 1 baseline target (mandatory):**
+- Deep: **300-400 lines on first write** — do NOT submit a 200-line Phase 1 intending Phase 2 to add the missing 100. That means you under-mined.
+- Chunked: **500-600 lines on first write** — same rule.
+
+Phase 2 (gap research + Edit) should push from baseline toward the ceiling (600 Deep / 800 Chunked). Phase 2 is for *additions* — tables you skipped, mid-session feedback you missed, raw data blocks you summarized. Phase 2 is not for "now let me actually fill in the sections I left thin."
+
+If Phase 1 lands under its baseline, don't proceed to Phase 2 — rewrite Phase 1 first. The ceiling exists — USE IT.
 
 ## Anti-Skimming Rule
 
