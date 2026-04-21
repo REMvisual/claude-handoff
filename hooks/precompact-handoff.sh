@@ -41,6 +41,7 @@ cat > "$HANDOFF_FILE" << HEREDOC
 **Date:** ${DATE}
 **Branch:** ${GIT_BRANCH}
 **Trigger:** Context auto-compaction
+**Auto:** true
 
 ---
 
