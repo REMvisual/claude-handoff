@@ -161,9 +161,11 @@ Check your system prompt for context window size.
 ### Two-Phase Write
 
 1. **Phase 1 — Initial Write.** Compose and write everything in ONE Write call. All sections.
-2. **Phase 2 — Gap Research.** After writing, count lines. Read your file back. Scan conversation for data you didn't capture (tables skipped, mid-session feedback missed, measurements without numbers, approaches mentioned but not detailed). Use Edit to append until you approach the ceiling.
+   **Phase 1 MUST hit the pass minimum on its own** — Quick: 150+ standard / 250+ extended, Deep: 300+, Chunked: 500+. Phase 1 is not a rough draft; it's the baseline. If you find yourself planning to "flesh it out in Phase 2," stop and expand the current sections before writing.
+2. **Phase 2 — Gap Research.** After writing, count lines. Read your file back. Scan conversation for data you didn't capture (tables skipped, mid-session feedback missed, measurements without numbers, approaches mentioned but not detailed). Use Edit to append toward the ceiling.
+   **Phase 2 is for gaps, not for baseline.** If Phase 2 needs to add 50+ lines to reach the minimum, Phase 1 was under-mined.
 
-**Phase 2 is MANDATORY for Deep and Chunked passes.** Optional for Quick.
+**Phase 2 is MANDATORY for Deep and Chunked passes.** Optional for Quick — but run it if your first pass is below the ceiling by >20%.
 
 **Splitting:** only if final file exceeds threshold. Under threshold = one file.
 
