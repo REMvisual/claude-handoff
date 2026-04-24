@@ -73,7 +73,7 @@ Both capture your session. The difference is what the **next session** does:
 1. **Mines your conversation** — 12-item extraction checklist covering goals, approaches, failures, decisions, measurements, code analysis, and user preferences
 2. **Gathers external state** — git log, diff, uncommitted changes, active tasks (in parallel)
 3. **Detects chain continuity** — finds prior handoffs in the same work stream, inherits chain tag and sequence number
-4. **Validates the output** — enforces line minimums by session size. If the first pass is too thin, it re-mines and expands
+4. **Validates the output** — Phase 1 must hit the pass minimum on first write; Phase 2 then fills gaps toward the ceiling
 5. **Adapts to context size** — at 500K+ tokens, switches to multi-pass map-reduce extraction to avoid the "lost in the middle" problem
 
 Handoffs link across sessions automatically:
