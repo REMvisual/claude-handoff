@@ -108,8 +108,8 @@ When ending a session or saving progress:
 
 The skills work standalone. They unlock more when paired with:
 
-- **[Beads](https://github.com/beads-project/beads)** — Issue tracking in your repo. Handoffs auto-detect active beads and use them as chain tags.
-- **[OpenViking](https://github.com/openviking/openviking)** — Persistent AI memory. Handoffs search for prior decisions and context from earlier sessions.
+- **[Beads](https://github.com/gastownhall/beads)** — Issue tracking in your repo. Handoffs auto-detect active beads and use them as chain tags.
+- **[OpenViking](https://github.com/volcengine/OpenViking)** — Persistent AI memory. Handoffs search for prior decisions and context from earlier sessions.
 - **Git** — git log, diff, status gathered automatically.
 - **Any CLI task tracker** — The skills use `bd` (beads) as default — swap in Linear, Jira CLI, or GitHub Issues.
 
