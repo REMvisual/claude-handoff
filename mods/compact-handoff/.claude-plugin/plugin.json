@@ -1,0 +1,12 @@
+{
+  "name": "compact-handoff",
+  "version": "0.1.0",
+  "description": "EXPERIMENTAL: run /handoff or /handoffplan, then replace the conversation with the handoff and continue in the same terminal. Needs compact-handoff-answer. Tested on Claude Code 2.1.300.",
+  "types": "./types/index.d.ts",
+  "dependencies": [
+    "compact-handoff-answer"
+  ],
+  "author": {
+    "name": "REMvisual"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "compact-handoff-answer",
+  "version": "0.1.0",
+  "description": "EXPERIMENTAL companion of compact-handoff: supplies the replacement message for the compactions compact-handoff starts (a plugin cannot answer its own). Does nothing on any other compaction.",
+  "author": {
+    "name": "REMvisual"
+  }
+}

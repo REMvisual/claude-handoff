@@ -1,0 +1,17 @@
+{
+  "name": "claude-handoff",
+  "description": "compact-handoff: replace the conversation with a /handoff and keep going (experimental)",
+  "owner": {
+    "name": "REMvisual"
+  },
+  "plugins": [
+    {
+      "name": "compact-handoff",
+      "source": "./mods/compact-handoff"
+    },
+    {
+      "name": "compact-handoff-answer",
+      "source": "./mods/compact-handoff-answer"
+    }
+  ]
+}
