@@ -30,9 +30,10 @@ The user should not need to provide anything — `/handoff` alone is sufficient.
 
 If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run. It replaces the conversation with this handoff when your turn ends, so the turn must finish with nothing pending:
 
-- Run Steps 1-7 exactly as normal. Anything else in `$ARGUMENTS` is the framing hint.
+- Run Steps 1-6 exactly as normal. Anything else in `$ARGUMENTS` is the framing hint.
+- **Step 7: one line only** (file path, line count, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
 - **Ask nothing in this turn.** Where a step says to ask (e.g. Tier B "Any doubt"), take its stated default and note the choice in the handoff.
-- **Step 8: don't ask.** Follow the **Yes** flow in `references/close-session.md` (commit, append `## Session Closed`, print the paste prompt), skipping its step 4.
+- **Step 8: don't ask.** Follow the **Yes** flow in `references/close-session.md` (append `## Session Closed`, commit, print the paste prompt), skipping its step 4.
 - End your turn with this exact last line, path relative to the repo root:
   `COMPACT-HANDOFF-READY: {handoff path}`
 - If no handoff file could be written, end with `COMPACT-HANDOFF-FAILED: {reason}` instead. The mod then leaves the context untouched.

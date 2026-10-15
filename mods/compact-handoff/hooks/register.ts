@@ -40,7 +40,8 @@ async function abort($: EngineInterface, why: string) {
 }
 
 async function start($: EngineInterface, mode: Mode, args: string) {
-  if (args.trim() === 'cancel') {
+  args = (args ?? '').trim()
+  if (args === 'cancel') {
     await update($, runAtom, () => null)
     return { text: 'cancelled.' }
   }
@@ -150,6 +151,9 @@ export const register: Register = on => {
     await $.command.register({ name: GO, description: 'Internal step of /compact-handoff' })
     return next(e)
   })
+
+  // The internal step stays runnable but out of the typeahead and /help.
+  on('command.describe', { command: GO }, async ($, e, next) => ({ ...(await next(e)), isHidden: true }))
 
   on('command.run', { command: 'compact-handoff' }, async ($, e) => start($, 'resume', e.args))
   on('command.run', { command: 'compact-handoffplan' }, async ($, e) => start($, 'plan', e.args))

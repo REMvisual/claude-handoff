@@ -1,4 +1,4 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 import {
   buildInstructions,
@@ -69,4 +69,46 @@ test('resolves and compares paths across separators', () => {
   expect(resolvePath('C:\\repo', 'D:\\x\\H.md')).toBe('D:\\x\\H.md')
   expect(samePath('C:\\Repo\\plans\\handoffs\\H.md', 'plans/handoffs/h.md')).toBe(true)
   expect(samePath('plans/handoffs/A.md', 'plans/handoffs/B.md')).toBe(false)
+})
+
+// A slash command as the person types it.
+const typed = (command: string, args = '') => ({
+  command,
+  args,
+  origin: { kind: 'composer' as const },
+  presentation: { isFullscreen: false, columns: 80 },
+})
+
+test('cancel clears a run and a second start is refused while one is running', async ($, on) => {
+  mock.clock(on)
+  const first = await $.command.run(typed('compact-handoff', 'note'))
+  expect(first.text).toContain('compact mode')
+  const second = await $.command.run(typed('compact-handoffplan'))
+  expect(second.text).toContain('already in progress')
+  const cancelled = await $.command.run(typed('compact-handoff', 'cancel'))
+  expect(cancelled.text).toBe('cancelled.')
+  const again = await $.command.run(typed('compact-handoffplan'))
+  expect(again.text).toContain('/handoffplan')
+})
+
+test('the internal step is hidden from the menu and does nothing without a run', async ($, on) => {
+  on('command.describe', ($, e) => ({ description: e.description, argumentHint: e.argumentHint, isHidden: e.isHidden }))
+  const listed = await $.command.describe({
+    command: 'compact-handoff-go',
+    description: 'Internal step of /compact-handoff',
+    isHidden: false,
+    immediate: false,
+    provider: { plugin: 'compact-handoff', tier: 'user' },
+  } as never)
+  expect(listed.isHidden).toBe(true)
+  const shown = await $.command.describe({
+    command: 'compact-handoff',
+    description: 'Run /handoff',
+    isHidden: false,
+    immediate: false,
+    provider: { plugin: 'compact-handoff', tier: 'user' },
+  } as never)
+  expect(shown.isHidden).toBe(false)
+  const idle = await $.command.run(typed('compact-handoff-go'))
+  expect(idle.text).toBe('nothing to compact.')
 })

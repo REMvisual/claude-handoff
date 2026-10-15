@@ -6,14 +6,25 @@ In compact mode (see SKILL.md) nobody is asked: run the **Yes** flow, skip its s
 
 ## If the user says YES (or "yes"):
 
-### 1. Commit all session work (default — don't ask again)
+### 1. Append to the handoff file
+
+Do this before committing, so the commit includes it and the tree ends clean.
+
+```
+## Session Closed
+**Closed at:** {timestamp}
+**Commit:** the `session: {slug}` commit that includes this note
+**Session status:** Handed off to next session
+```
+
+### 2. Commit all session work (default — don't ask again)
 
 ```bash
 git status -s
 git diff --stat
 ```
 
-If uncommitted changes exist, stage all changed/new files relevant to this session's work, then commit:
+If uncommitted changes exist, stage all changed/new files relevant to this session's work (including the handoff file), then commit:
 
 ```
 session: {slug} [{chain_tag}]
@@ -33,15 +44,6 @@ Show the user the file list + commit hash.
 **Be surgical:** only commit files related to this session's work. If `git status` shows unrelated changes from other sessions, mention them but don't commit. When in doubt, list the files and ask.
 
 If working tree is clean: "Working tree clean — nothing to commit."
-
-### 2. Append to the handoff file
-
-```
-## Session Closed
-**Closed at:** {timestamp}
-**Commit:** {short hash}
-**Session status:** Handed off to next session
-```
 
 ### 3. Output the paste prompt
 
@@ -67,7 +69,7 @@ Then wait for my go-ahead before executing.
 
 ## If the user says "close without commit":
 
-Do steps 2-4 above, skip the commit. Warn: "Changes are uncommitted — next session or other sessions may see dirty state."
+Do steps 1, 3 and 4 above, skip the commit. Warn: "Changes are uncommitted — next session or other sessions may see dirty state."
 
 ## If the user says NO:
 
