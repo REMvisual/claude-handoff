@@ -2,6 +2,8 @@
 
 Used by Step 8 of the handoff skill, after the user answers Yes / No / "close without commit".
 
+In compact mode (see SKILL.md) nobody is asked: run the **Yes** flow, skip its step 4, and end with the `COMPACT-HANDOFF-READY:` line.
+
 ## If the user says YES (or "yes"):
 
 ### 1. Commit all session work (default — don't ask again)
