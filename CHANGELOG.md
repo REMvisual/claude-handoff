@@ -18,9 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed — skills
 - `/handoff` and `/handoffplan` accept a `compact-mode` argument. In compact mode they ask nothing, take the default close flow (commit), and end with a `COMPACT-HANDOFF-READY:` line. Behaviour without the argument is unchanged.
 
+## [2.0.1] - 2026-10-02
+
 ### Fixed
-- `SKILL.md` casing, so Claude Code discovers the skills after the README install steps (#1). From `c407845`.
-- Broken Beads and OpenViking links (#2). From `c407845`.
+- Skills were not discovered after install (#1): `skill.md` renamed to `SKILL.md` in `handoff` and `handoffplan`.
+- Broken README links (#2): Beads now points to `gastownhall/beads`, OpenViking to `volcengine/OpenViking`.
+- README "How it works" step 4 reflects the Phase 1 baseline enforcement from v2.0.0.
 
 ## [2.0.0] - 2026-04-21
 
