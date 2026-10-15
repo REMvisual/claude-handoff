@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-14 — EXPERIMENTAL
+
+### Added — `compact-handoff` mod (experimental)
+- New Claude Code mod in `mods/compact-handoff/`. `/compact-handoff` runs the full `/handoff`, then replaces the conversation with the handoff and continues in the same terminal. It works like `/compact`, but the summary is the validated handoff. `/compact-handoffplan` does the same with `/handoffplan`, and the continued session starts executing Phase 1.
+- No summarizer call: the replacement message is supplied by a small companion plugin, `mods/compact-handoff-answer/`. Claude Code skips a plugin's own hooks on a compaction that plugin started, so the answer has to come from a second plugin. It answers only compactions carrying the `compact-handoff:v1` marker and passes every other compaction through untouched. Installing `compact-handoff` pulls it in as a dependency.
+- Safety: the conversation is only replaced after the handoff (and plan) files are verified on disk. An interrupted turn, a refusal, an error, a missing or empty file, or a `COMPACT-HANDOFF-FAILED` line leaves the context untouched.
+- The continue-prompt is the skill's own paste prompt, so chain detection keeps working: the next handoff becomes seq N+1 with the right parent.
+- Context nudge: a one-time toast at 70% context recommends `/compact-handoff`.
+- Requires a Claude Code build with mods. Tested on 2.1.300.
+
+### Changed — skills
+- `/handoff` and `/handoffplan` accept a `compact-mode` argument. In compact mode they ask nothing, take the default close flow (commit), and end with a `COMPACT-HANDOFF-READY:` line. Behaviour without the argument is unchanged.
+
+### Fixed
+- `SKILL.md` casing, so Claude Code discovers the skills after the README install steps (#1). From `c407845`.
+- Broken Beads and OpenViking links (#2). From `c407845`.
+
 ## [2.0.0] - 2026-04-21
 
 ### Changed — `/handoff` architecture

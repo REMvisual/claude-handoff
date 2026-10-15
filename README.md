@@ -113,6 +113,40 @@ The skills work standalone. They unlock more when paired with:
 - **Git** — git log, diff, status gathered automatically.
 - **Any CLI task tracker** — The skills use `bd` (beads) as default — swap in Linear, Jira CLI, or GitHub Issues.
 
+## compact-handoff mod (experimental)
+
+Runs the handoff, then **replaces the conversation with it and keeps going in the same terminal**, with no new session and no paste. It works like `/compact`, but the summary is your validated handoff.
+
+```bash
+claude plugin marketplace add REMvisual/claude-handoff
+claude plugin install compact-handoff@claude-handoff
+```
+
+This also installs its small companion, `compact-handoff-answer` (see below). The skills above must be installed too, from v2.1.0 or later.
+
+```
+/compact-handoff [note]       # /handoff, then continue from "Where We're Going"
+/compact-handoffplan [note]   # /handoffplan, then start executing Phase 1
+/compact-handoff cancel       # drop a run that's stuck
+```
+
+What happens:
+
+1. The skill runs in `compact-mode`: it asks nothing, commits the session's work, and writes the handoff (and plan).
+2. When that turn ends, the mod checks the files on disk. If anything is missing, empty, interrupted or refused, **the context is left untouched**.
+3. The conversation is replaced by one short message naming the files. No summarizer call is made, so it takes milliseconds.
+4. The skill's own paste prompt is sent automatically, so chain tracking continues (seq N+1).
+
+The mod also shows a one-time toast when context passes 70%, suggesting `/compact-handoff`.
+
+**Why two plugins:** Claude Code doesn't let a plugin answer a compaction it started itself. `compact-handoff-answer` is about 20 lines. It answers only compactions marked `compact-handoff:v1` and leaves every other compaction alone.
+
+**Caveats:**
+- Experimental. The mod API is early access; tested on Claude Code 2.1.300.
+- Where an organization manages Claude Code, compaction hooks from user-installed plugins don't run.
+- Your own Stop and SessionStart hooks still run around the compaction, so slow ones add to the wait.
+- Classic `PreCompact` hooks (including the one below) don't run on these compactions. `SessionStart` hooks with the `compact` matcher still do.
+
 ## PreCompact hook (optional)
 
 Safety net that runs before context compaction, capturing ~50 lines of git state and active tasks.
@@ -126,6 +160,8 @@ chmod +x ~/.claude/hooks/precompact-handoff.sh
 
 ```bash
 rm -rf ~/.claude/skills/handoff ~/.claude/skills/handoffplan
+claude plugin uninstall compact-handoff@claude-handoff
+claude plugin prune    # removes compact-handoff-answer, installed as its dependency
 ```
 
 ## License
