@@ -6,6 +6,8 @@
 
 Two skills for [Claude Code](https://claude.ai/code) that capture decisions, failed approaches, measurements, and next steps — so your next session picks up exactly where you left off. Stop wasting 20-40% of each session rediscovering what was already tried.
 
+**Now a Claude Code mod:** `/compact-handoff` writes the handoff, swaps the conversation for it, and keeps working in the same terminal. No new window, no paste. [Jump to the mod ↓](#compact-handoff-mod-experimental)
+
 [![Download Latest](https://img.shields.io/github/v/release/REMvisual/claude-handoff?style=for-the-badge&label=Download&color=blue)](https://github.com/REMvisual/claude-handoff/releases/latest)
 
 ## Install

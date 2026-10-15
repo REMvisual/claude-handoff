@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-10-15
+
+### Fixed
+- `/handoff` close flow appends `## Session Closed` before committing, so the commit includes it and the tree ends clean. Before, every closed session left the handoff file modified.
+
+### Changed
+- Compact mode keeps the final report to one line in `/handoff` (Step 7) and `/handoffplan` (Step 5). The compaction replaces that turn seconds later, so the full report was wasted output.
+- `compact-handoff` 0.1.1: the internal `/compact-handoff-go` step is hidden from the typeahead and `/help`, and `start` tolerates a missing argument. Two engine-level tests added (cancel, double start, hidden step).
+
 ## [2.1.0] - 2026-10-14 — EXPERIMENTAL
 
 ### Added — `compact-handoff` mod (experimental)
