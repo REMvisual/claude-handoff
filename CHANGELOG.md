@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-19
+
+### Fixed
+- `/handoff` close flow: when the user settles a decision along with the close answer, the skill now updates every section that still asked for it (Where We're Going, Open Questions, the Quick Start `# Next action`, the bead note). Before, the next session could be told to ask again.
+- Compact mode: the skills must print the paste prompt block in full. In a live run the skill shortened it to one line, so the mod fell back to its generic prompt and the chain tag was lost.
+- `compact-handoff` 0.1.2: the fallback prompt reads the chain (`seq N, tag`) from the handoff's `**Chain:**` line, so chain tracking survives even when the skill's block is missing.
+
 ## [2.1.1] - 2026-10-15
 
 ### Fixed

@@ -55,12 +55,23 @@ export function extractPastePrompt(text: string): string | null {
   return body || null
 }
 
+/** The handoff's chain as "seq N, tag", from its `**Chain:** \`tag\` seq \`N\`` header line. */
+export function parseChain(content: string): string | null {
+  const m = /^\*\*Chain:\*\*\s*`([^`]+)`\s*seq\s*`?(\d+)`?/m.exec(content)
+  return m ? `seq ${m[2]}, ${m[1]}` : null
+}
+
 /** Used only when the skill's own paste prompt could not be extracted. */
-export function fallbackPrompt(mode: Mode, handoff: string, plan?: string): string {
+export function fallbackPrompt(mode: Mode, handoff: string, plan?: string, chain?: string | null): string {
+  const tag = chain ? ` (${chain})` : ''
   if (mode === 'plan' && plan) {
-    return `Read \`${plan}\` and \`${handoff}\`. Execute the plan starting at Phase 1: claim its bead, read the Quick Start files, then start coding Phase 1's first concrete action.`
+    return `Read \`${plan}\` and \`${handoff}\`${tag}. Execute the plan starting at Phase 1: claim its bead, read the Quick Start files, then start coding Phase 1's first concrete action.`
   }
-  return `Read \`${handoff}\` and continue from "Where We're Going". Summarize what you understand, then wait for my go-ahead before executing.`
+  return (
+    `Read \`${handoff}\`${tag} and continue from "Where We're Going". Check \`bd list --status=in_progress\` for active work.\n\n` +
+    'Before starting work, summarize the goal, current state and what was tried; name the bead(s) you will claim; ' +
+    'say what you will verify first; then wait for my go-ahead before executing.'
+  )
 }
 
 /** The one message the conversation is replaced with. */

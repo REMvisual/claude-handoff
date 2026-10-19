@@ -6,6 +6,7 @@ import {
   extractPastePrompt,
   fallbackPrompt,
   MARKER,
+  parseChain,
   parseSentinel,
   resolvePath,
   samePath,
@@ -60,6 +61,16 @@ test('builds the marked instructions and the fallbacks', () => {
   expect(buildInstructions(stub).split('\n')[0]).toBe(MARKER)
   expect(fallbackPrompt('plan', 'h.md', 'p.md')).toContain('Execute the plan starting at Phase 1')
   expect(fallbackPrompt('resume', 'h.md')).toContain('Where We\'re Going')
+})
+
+test('the fallback keeps the chain from the handoff header', () => {
+  const head = '# T\n\n**Chain:** `PROJ-abc1` seq `1`\n**Parent:** none\n'
+  expect(parseChain(head)).toBe('seq 1, PROJ-abc1')
+  expect(parseChain('**Chain:** `x-1` seq 12')).toBe('seq 12, x-1')
+  expect(parseChain('no chain here')).toBe(null)
+  expect(fallbackPrompt('resume', 'h.md', undefined, 'seq 1, PROJ-abc1')).toContain('`h.md` (seq 1, PROJ-abc1)')
+  expect(fallbackPrompt('plan', 'h.md', 'p.md', 'seq 2, t')).toContain('`h.md` (seq 2, t)')
+  expect(fallbackPrompt('resume', 'h.md')).not.toContain('(seq')
 })
 
 test('resolves and compares paths across separators', () => {

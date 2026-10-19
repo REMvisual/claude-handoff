@@ -34,7 +34,7 @@ This is not optional. The handoff is the data store — a thin handoff produces 
 
 **Arguments:** $ARGUMENTS
 
-**Compact mode.** If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run and will replace the conversation with the plan when your turn ends. Follow the handoff skill's compact-mode rules: ask nothing in this turn, and take stated defaults. Run Steps 1-6 as normal, but keep Step 5's report to one line (the compaction replaces it seconds later) and skip Step 6 item 3. End your turn with this exact last line, paths relative to the repo root:
+**Compact mode.** If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run and will replace the conversation with the plan when your turn ends. Follow the handoff skill's compact-mode rules: ask nothing in this turn, and take stated defaults. Run Steps 1-6 as normal, but keep Step 5's report to one line (the compaction replaces it seconds later) and skip Step 6 item 3. Print Step 6's paste prompt block exactly as the template has it (header, dashed rules, every line): the mod sends it as the next prompt word for word. End your turn with this exact last line, paths relative to the repo root:
 `COMPACT-HANDOFF-READY: {handoff path} | {plan path}`
 If either file could not be written, end with `COMPACT-HANDOFF-FAILED: {reason}` instead.
 

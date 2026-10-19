@@ -34,6 +34,7 @@ If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod star
 - **Step 7: one line only** (file path, line count, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
 - **Ask nothing in this turn.** Where a step says to ask (e.g. Tier B "Any doubt"), take its stated default and note the choice in the handoff.
 - **Step 8: don't ask.** Follow the **Yes** flow in `references/close-session.md` (append `## Session Closed`, commit, print the paste prompt), skipping its step 4.
+- **Print the paste prompt block exactly as the template has it**: the `PASTE THIS INTO YOUR NEXT SESSION:` header, the dashed rules, the `(seq {N}, {chain_tag})` line and the onboarding steps. The mod sends that block as the next prompt word for word. Never shorten it to one line, even when you reused or restored an existing handoff instead of writing a new one.
 - End your turn with this exact last line, path relative to the repo root:
   `COMPACT-HANDOFF-READY: {handoff path}`
 - If no handoff file could be written, end with `COMPACT-HANDOFF-FAILED: {reason}` instead. The mod then leaves the context untouched.

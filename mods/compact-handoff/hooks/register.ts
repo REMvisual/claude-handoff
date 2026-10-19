@@ -17,6 +17,7 @@ import {
   classifyPath,
   extractPastePrompt,
   fallbackPrompt,
+  parseChain,
   parseSentinel,
   resolvePath,
   samePath,
@@ -89,6 +90,7 @@ async function finishHandoff($: EngineInterface, reason: string, text: string) {
   }
 
   const cwd = await $.session.cwd()
+  let chain: string | null = null
   for (const file of [handoff, plan].filter((f): f is string => !!f)) {
     let content = ''
     try {
@@ -97,9 +99,10 @@ async function finishHandoff($: EngineInterface, reason: string, text: string) {
       return abort($, `cannot read ${file}`)
     }
     if (content.trim().length < 200) return abort($, `${file} looks empty`)
+    if (file === handoff) chain = parseChain(content)
   }
 
-  const pastePrompt = extractPastePrompt(text) ?? fallbackPrompt(run.mode, handoff, plan)
+  const pastePrompt = extractPastePrompt(text) ?? fallbackPrompt(run.mode, handoff, plan, chain)
   await update($, runAtom, r => (r ? { ...r, stage: 'compacting' as const, handoff, plan, pastePrompt } : r))
   // Compaction is refused while a turn runs; a queued command runs once the session is idle.
   $.command.run({ command: GO }).catch(err => abort($, `could not queue the compaction (${String(err)})`))

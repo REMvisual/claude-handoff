@@ -10,6 +10,8 @@ In compact mode (see SKILL.md) nobody is asked: run the **Yes** flow, skip its s
 
 Do this before committing, so the commit includes it and the tree ends clean.
 
+If the user settled anything along with the close answer (a decision, a choice between options), record it first, then reread every section that asked for it: Where We're Going, Open Questions and the Quick Start `# Next action`. None of them may still ask for a decision that has been made. Update the bead note and `bd remember` the same way.
+
 ```
 ## Session Closed
 **Closed at:** {timestamp}
