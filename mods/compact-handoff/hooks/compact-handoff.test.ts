@@ -3,12 +3,17 @@ import { expect, mock, test } from 'claude-code/testing'
 import {
   buildInstructions,
   classifyPath,
+  advance,
+  contextArg,
   countLines,
   extractPastePrompt,
   fallbackPrompt,
   isHandoffSkill,
   lineFloor,
   MARKER,
+  progressBar,
+  readingProgress,
+  writingProgress,
   parseChain,
   parseSentinel,
   resolvePath,
@@ -105,6 +110,40 @@ test("the model's own handoff call is refused unless the user asked for one", as
   expect(fromPlan.deny).toBe(undefined)
 })
 
+test('progress moves forward with the steps and the line count', () => {
+  const chunked = { pass: 'Chunked' as const, min: 500 }
+  expect(writingProgress(0, chunked, false)).toEqual({ percent: 25, step: 'Writing the handoff', detail: '0 of 500 lines' })
+  expect(writingProgress(250, chunked, false).percent).toBe(48)
+  expect(writingProgress(900, chunked, false).percent).toBe(70)
+  expect(writingProgress(360, chunked, true)).toEqual({ percent: 86, step: 'Adding missing detail', detail: '360 of 500 lines' })
+  expect(readingProgress('C:/x/references/mining-deep-chunked.md', false)?.percent).toBe(20)
+  // A run that reads the close flow before writing anything is not closing yet.
+  expect(readingProgress('/s/references/close-session.md', false)).toBe(null)
+  expect(readingProgress('/s/references/close-session.md', true)?.step).toBe('Closing the session')
+  expect(readingProgress('/s/references/validation.md', true)?.percent).toBe(75)
+  expect(readingProgress('C:\\s\\references\\validation.md', true)?.percent).toBe(75)
+  const checking = { percent: 75, step: 'Checking the handoff' }
+  expect(advance(checking, writingProgress(400, chunked, false))).toEqual({ ...checking, detail: '400 of 500 lines' })
+  expect(advance(null, checking)).toEqual(checking)
+  expect(progressBar(50, 10)).toBe('█████░░░░░')
+  expect(progressBar(130, 4)).toBe('████')
+  expect(contextArg(677_400)).toBe('context=677k')
+  expect(contextArg(undefined)).toBe('')
+})
+
+test('the skill is told the measured context size', async ($, on) => {
+  const clock = mock.clock(on)
+  const runs: string[] = []
+  on('session.usage', () => ({ value: { startedAt: 0, rateLimits: [], context: { tokens: 677_000, window: 1_000_000, percent: 68 } } }) as never)
+  on('command.run', ($, e) => {
+    runs.push(`${e.command} ${e.args}`)
+    return { text: '' }
+  })
+  await $.command.run(typed('compact-handoff', 'note'))
+  await clock.advance(200)
+  expect(runs.some(r => r.startsWith('handoff compact-mode context=677k note'))).toBe(true)
+})
+
 test('resolves and compares paths across separators', () => {
   expect(resolvePath('C:\\repo', 'plans/handoffs/H.md')).toBe('C:\\repo\\plans/handoffs/H.md')
   expect(resolvePath('/repo/', './plans/H.md')).toBe('/repo/plans/H.md')
@@ -125,13 +164,13 @@ const typed = (command: string, args = '') => ({
 test('cancel clears a run and a second start is refused while one is running', async ($, on) => {
   mock.clock(on)
   const first = await $.command.run(typed('compact-handoff', 'note'))
-  expect(first.text).toContain('compact mode')
+  expect(first.text).toContain('replaces this conversation')
   const second = await $.command.run(typed('compact-handoffplan'))
-  expect(second.text).toContain('already in progress')
+  expect(second.text).toContain('already running')
   const cancelled = await $.command.run(typed('compact-handoff', 'cancel'))
-  expect(cancelled.text).toBe('cancelled.')
+  expect(cancelled.text).toContain('Cancelled')
   const again = await $.command.run(typed('compact-handoffplan'))
-  expect(again.text).toContain('/handoffplan')
+  expect(again.text).toContain('the handoff and the plan')
 })
 
 test('the internal step is hidden from the menu and does nothing without a run', async ($, on) => {
@@ -153,5 +192,32 @@ test('the internal step is hidden from the menu and does nothing without a run',
   } as never)
   expect(shown.isHidden).toBe(false)
   const idle = await $.command.run(typed('compact-handoff-go'))
-  expect(idle.text).toBe('nothing to compact.')
+  expect(idle.text).toBe('Nothing to replace.')
+})
+
+test('a running handoff shows its percent in the spinner line and the band', async ($, on) => {
+  mock.clock(on)
+  // The engine's own drawing beneath the plugin: the spinner line says its message, or its word.
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    const props = e.props as { message?: string | null; word?: string }
+    return h(Text, null, props.message ?? props.word ?? 'engine') as never
+  })
+  const spinner = { plugin: 'compact-handoff', component: 'Spinner', surface: 'terminal' } as const
+  const spinnerProps = { word: 'Baking', message: null, suffix: '…', mode: 'tool-use' }
+  const band = { plugin: 'compact-handoff', component: 'AbovePrompt', surface: 'terminal' } as const
+  const bandProps = { hasSurvey: false, isWorking: true, maxRows: 10 }
+
+  const idle = await $.ui.mount({ ...spinner, props: spinnerProps } as never)
+  expect((await idle.find({ type: 'Text' }))?.text).toBe('Baking')
+  await idle.unmount()
+
+  await $.command.run(typed('compact-handoff'))
+  const line = await $.ui.mount({ ...spinner, props: spinnerProps } as never)
+  expect((await line.find({ type: 'Text' }))?.text).toBe('Handoff 5% · Starting')
+  await line.unmount()
+  const bar = await $.ui.mount({ ...band, props: bandProps } as never)
+  expect((await bar.find({ type: 'Text', text: /5%/ }))?.text).toContain('5%')
+  expect((await bar.find({ type: 'Text', text: /Starting/ }))?.text).toBe('Starting')
+  await bar.unmount()
 })

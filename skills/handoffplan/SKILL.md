@@ -34,13 +34,13 @@ This is not optional. The handoff is the data store — a thin handoff produces 
 
 **Arguments:** $ARGUMENTS
 
-**Compact mode.** If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run and will replace the conversation with the plan when your turn ends. Follow the handoff skill's compact-mode rules: ask nothing in this turn, and take stated defaults. Run Steps 1-6 as normal, but keep Step 5's report to one line (the compaction replaces it seconds later) and skip Step 6 item 3. Print Step 6's paste prompt block exactly as the template has it (header, dashed rules, every line): the mod sends it as the next prompt word for word. End your turn with this exact last line, paths relative to the repo root:
+**Compact mode.** If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run and will replace the conversation with the plan when your turn ends. Follow the handoff skill's compact-mode rules: ask nothing in this turn, and take stated defaults. If `$ARGUMENTS` has `context={N}k`, the handoff chooses its mining pass from that number. Run Steps 1-6 as normal, but keep Step 5's report to one line (the compaction replaces it seconds later) and skip Step 6 item 3. Print Step 6's paste prompt block exactly as the template has it (header, dashed rules, every line): the mod sends it as the next prompt word for word. End your turn with this exact last line, paths relative to the repo root:
 `COMPACT-HANDOFF-READY: {handoff path} | {plan path}`
 If either file could not be written, end with `COMPACT-HANDOFF-FAILED: {reason}` instead.
 
 ---
 
-**CHECKPOINT before Step 2:** Count the handoff's lines and print the handoff skill's `LINE CHECK` line. Check its mining-pass minimum (Quick: 150/250, Deep: 300, Chunked: 500 — see handoff skill's Line Budget table). If the handoff is under its pass minimum, STOP. Run the handoff's Phase 2 gap research pass now — read back what you wrote, scan the conversation for uncaptured data, and Edit to expand. Do not proceed to the plan with a thin handoff. The plan's quality is bounded by the handoff's quality.
+**CHECKPOINT before Step 2:** Count the handoff's lines and print the handoff skill's Length check line. Check its mining-pass minimum (Quick: 150/250, Deep: 300, Chunked: 500 — see handoff skill's Line Budget table). If the handoff is under its pass minimum, STOP. Run the handoff's Phase 2 gap research pass now — read back what you wrote, scan the conversation for uncaptured data, and Edit to expand. Do not proceed to the plan with a thin handoff. The plan's quality is bounded by the handoff's quality.
 
 ---
 

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-10-24
+
+### Added
+- `compact-handoff` 0.1.4: progress while a run works. A bar above the prompt and the spinner line show `Handoff N% · step`, with the handoff's lines against its minimum while it is written (Starting, Reading the session, Mining the session, Writing the handoff, Checking, Closing, Adding missing detail, Replacing the conversation, Done).
+
+### Fixed
+- The skill picked its mining pass from a guess: a live 682K-token run announced Deep (100K-500K) instead of Chunked. The mod now passes the measured size (`compact-mode context=677k`) and the skill chooses the pass from it; plain `/handoff` takes the larger pass when it can't tell the size.
+
+### Changed
+- Plainer wording for every stage. The skill prints `Mining pass: Chunked (677k tokens, …)` and `Length check: 512 of 500 lines (Chunked pass) ✓`. The mod's messages, toasts and its request for missing detail are rewritten in plain sentences.
+
 ## [2.1.3] - 2026-10-23
 
 ### Fixed

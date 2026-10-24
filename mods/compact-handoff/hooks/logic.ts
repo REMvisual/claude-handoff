@@ -1,5 +1,5 @@
 // Pure helpers for the compact-handoff mod: no `$`, so the tests can call them directly.
-import type { Mode } from '../types'
+import type { Mode, Progress } from '../types'
 
 /**
  * First line of the compaction instructions. compact-handoff-answer answers only a
@@ -81,12 +81,52 @@ export function countLines(content: string): number {
 /** Sent once when the handoff is under its floor: finish mining, then report again. */
 export function shortPrompt(handoff: string, lines: number, floor: Floor, tokens: number): string {
   return (
-    `compact-handoff: \`${handoff}\` has ${lines} lines; the ${floor.pass} pass minimum is ${floor.min} ` +
-    `(context was ${Math.round(tokens / 1000)}k tokens). The conversation is deleted after this, so the mining is not finished. ` +
-    'Read `references/mining-deep-chunked.md` if you have not, then go through the conversation early, middle and late ' +
-    'for decisions, numbers, failed approaches, file paths and user feedback the file is missing, and Edit them in. ' +
-    'Extract, do not pad. Then end your turn with the COMPACT-HANDOFF-READY line again.'
+    `The handoff is too short to replace this conversation: ${lines} lines, and a ${kTokens(tokens)} session ` +
+    `needs at least ${floor.min} (${floor.pass} pass).\n\n` +
+    `Go back through the early, middle and late parts of the session and add what \`${handoff}\` is missing: ` +
+    'decisions, numbers, failed approaches, file paths, user feedback. Read `references/mining-deep-chunked.md` first ' +
+    'if you have not. Add real detail, not padding. Then print the Length check again and end with the ' +
+    'COMPACT-HANDOFF-READY line.'
   )
+}
+
+export function kTokens(tokens: number): string {
+  return `${Math.round(tokens / 1000)}k-token`
+}
+
+/** The context size the skill picks its mining pass from, as a `compact-mode` argument. */
+export function contextArg(tokens: number | undefined): string {
+  return tokens ? `context=${Math.round(tokens / 1000)}k` : ''
+}
+
+export function progressBar(percent: number, width = 20): string {
+  const filled = Math.round((Math.max(0, Math.min(100, percent)) / 100) * width)
+  return '█'.repeat(filled) + '░'.repeat(width - filled)
+}
+
+/** 25-70% while the first pass grows toward its floor; 80-88% while missing detail is added. */
+export function writingProgress(lines: number, floor: Floor, addingDetail: boolean): Progress {
+  const share = Math.min(lines / floor.min, 1)
+  const detail = `${lines} of ${floor.min} lines`
+  return addingDetail
+    ? { percent: 80 + Math.round(8 * share), step: 'Adding missing detail', detail }
+    : { percent: 25 + Math.round(45 * share), step: 'Writing the handoff', detail }
+}
+
+/** The step a skill reference marks. Checking and closing count only once the handoff exists. */
+export function readingProgress(path: string, written: boolean): Progress | null {
+  const name = (path.replace(/\\/g, '/').split('/').pop() ?? '').toLowerCase()
+  if (name === 'mining-deep-chunked.md' || name === 'output-template.md') return { percent: 20, step: 'Mining the session' }
+  if (!written) return null
+  if (name === 'validation.md') return { percent: 75, step: 'Checking the handoff' }
+  if (name === 'close-session.md') return { percent: 80, step: 'Closing the session' }
+  return null
+}
+
+/** Progress only moves forward; a lower reading keeps the step and takes the new detail. */
+export function advance(prev: Progress | null, next: Progress): Progress {
+  if (!prev || next.percent >= prev.percent) return next
+  return next.detail ? { ...prev, detail: next.detail } : prev
 }
 
 /** The model's own call to a handoff skill, by the Skill tool's `skill` value. */
@@ -95,8 +135,8 @@ export function isHandoffSkill(skill: string): boolean {
 }
 
 export const SKILL_DENIED =
-  'compact-handoff: a handoff starts when the user asks for one. Do not write a handoff file yourself. ' +
-  'Tell the user the work is at a good point for a handoff and that they can type /compact-handoff ' +
+  'A handoff starts when the user asks for one, so this call was refused. Do not write a handoff file yourself. ' +
+  'Tell the user the work is at a good point for a handoff, and that they can type /compact-handoff ' +
   '(writes the handoff, then replaces the conversation with it) or /handoff (writes it and keeps the conversation).'
 
 /** Used only when the skill's own paste prompt could not be extracted. */

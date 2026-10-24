@@ -30,8 +30,8 @@ The user should not need to provide anything — `/handoff` alone is sufficient.
 
 If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run. It replaces the conversation with this handoff when your turn ends, so the turn must finish with nothing pending:
 
-- Run Steps 1-6 exactly as normal. Anything else in `$ARGUMENTS` is the framing hint. Compact mode shortens only the ending: the mining pass, its reference, the line minimum, Phase 2 and the LINE CHECK apply in full, and matter more, because the conversation is deleted after this turn. The mod counts the lines itself and won't compact a handoff under its pass minimum.
-- **Step 7: one line only** (file path, the LINE CHECK result, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
+- Run Steps 1-6 exactly as normal. `context={N}k` in `$ARGUMENTS` is the session's size as Claude Code measured it: choose the mining pass from it. Anything else in `$ARGUMENTS` is the framing hint. Compact mode shortens only the ending: the mining pass, its reference, the line minimum, Phase 2 and the Length check apply in full, and matter more, because the conversation is deleted after this turn. The mod counts the lines itself and won't compact a handoff under its pass minimum.
+- **Step 7: one line only** (file path, the Length check line, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
 - **Ask nothing in this turn.** Where a step says to ask (e.g. Tier B "Any doubt"), take its stated default and note the choice in the handoff.
 - **Step 8: don't ask.** Follow the **Yes** flow in `references/close-session.md` (append `## Session Closed`, commit, print the paste prompt), skipping its step 4.
 - **Print the paste prompt block exactly as the template has it**: the `PASTE THIS INTO YOUR NEXT SESSION:` header, the dashed rules, the `(seq {N}, {chain_tag})` line and the onboarding steps. The mod sends that block as the next prompt word for word. Never shorten it to one line, even when you reused or restored an existing handoff instead of writing a new one.
@@ -110,7 +110,7 @@ Once chain tag resolved, launch in parallel:
 
 If arguments were provided ($ARGUMENTS), use as a soft hint for framing. Conversation is ground truth.
 
-**Choose mining pass and announce it** (this is not optional):
+**Choose the mining pass and announce it** (this is not optional). Go by the context size: if `$ARGUMENTS` has `context={N}k`, use that number, not your own estimate. Otherwise use the size you can see; if you can't tell, choose the larger pass.
 
 | Pass | When | Strategy |
 |---|---|---|
@@ -118,7 +118,7 @@ If arguments were provided ($ARGUMENTS), use as a soft hint for framing. Convers
 | **Deep** | 100K-500K context tokens, OR 1M context + 20+ tool calls | Two passes — **read `references/mining-deep-chunked.md`** |
 | **Chunked** | 500K+ context tokens, OR 1M context + 50+ tool calls or >1hr work | Map-reduce — **read `references/mining-deep-chunked.md`** |
 
-**Write: "Mining with {Quick/Deep/Chunked} pass ({reason})."** before starting. Don't use numeric names — they collide with chain seq numbers.
+**Print one line before starting:** `Mining pass: {Quick/Deep/Chunked} ({size}, {reason})`, e.g. `Mining pass: Chunked (677k tokens, 100+ tool calls)`. Don't use numeric names — they collide with chain seq numbers.
 
 For Deep or Chunked, read `references/mining-deep-chunked.md` NOW for the multi-pass protocol: an actual Read call, before any Write. Don't do map-reduce from memory. Announcing the pass and skipping its reference is how a 757K-token session came out at 346 lines.
 
@@ -186,13 +186,13 @@ Check your system prompt for context window size.
 
 ## Step 4-CHECK: Self-Validation
 
-**First, the LINE CHECK.** Count with a tool call, not an estimate (`wc -l {handoff path}`), and print one line:
+**First, the Length check.** Count with a tool call, not an estimate (`wc -l {handoff path}`), and print one line:
 
-`LINE CHECK: {n} lines, {pass} pass minimum {min}: PASS` (or `FAIL`)
+`Length check: {n} of {min} lines ({pass} pass) ✓` when it meets the minimum, or `Length check: {n} of {min} lines ({pass} pass) ✗ not finished` when it doesn't.
 
 Minimums: Quick 150 standard / 250 extended, Deep 300, Chunked 500.
 
-**FAIL means the handoff is not finished.** Go back through the conversation, early, middle and late, and extract what the file is missing: decisions, numbers, failed approaches, file paths, user feedback. Don't pad: appendices that restate the file, or lists rebuilt from what it already says, don't count. Count again. Never call the handoff validated, and never go on to Step 5, while the LINE CHECK says FAIL.
+**✗ means the handoff is not finished.** Go back through the conversation, early, middle and late, and extract what the file is missing: decisions, numbers, failed approaches, file paths, user feedback. Don't pad: appendices that restate the file, or lists rebuilt from what it already says, don't count. Count again. Never call the handoff validated, and never go on to Step 5, while the Length check shows ✗.
 
 Then **read `references/validation.md`** and run every other check. If any fails, expand thin sections before proceeding.
 
@@ -211,7 +211,7 @@ bd remember "Handoff: {path}. Chain: {chain_tag} seq {N}. Status: {status}. Next
 ## Step 7: Report
 
 Tell the user concisely:
-- File path(s) and the final LINE CHECK line, verbatim
+- File path(s) and the final Length check line, verbatim
 - Chain info (tag, seq, new vs continuation)
 - Self-check outcome (and what was expanded if first pass failed)
 - The Next Action

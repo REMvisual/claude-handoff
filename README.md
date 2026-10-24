@@ -139,6 +139,8 @@ What happens:
 3. The conversation is replaced by one short message naming the files. No summarizer call is made, so it takes milliseconds.
 4. The skill's own paste prompt is sent automatically, so chain tracking continues (seq N+1).
 
+While it runs, a bar above the prompt and the spinner line show how far along it is, for example `Handoff 48% · Writing the handoff · 250 of 500 lines`.
+
 The mod also shows a one-time toast when context passes 70%, suggesting `/compact-handoff`.
 
 The model can't start a handoff on its own while the mod is installed: its own call to `/handoff` or `/handoffplan` is refused, and it tells you to run `/compact-handoff` or `/handoff` instead. A handoff you ask for (typing `/handoff`, or "do a handoff" in your own words) runs as usual.

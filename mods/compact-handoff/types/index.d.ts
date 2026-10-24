@@ -1,5 +1,8 @@
 export type Mode = 'resume' | 'plan'
 
+/** Where a run is, for the spinner line and the band above the prompt. */
+export type Progress = { percent: number; step: string; detail?: string }
+
 /** One /compact-handoff run, from the command until the continue-prompt is sent. */
 export type Run = {
   mode: Mode
@@ -21,6 +24,6 @@ export type Run = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'compact-handoff': { run: Run | null; nudged: boolean; askedForHandoff: boolean }
+    'compact-handoff': { run: Run | null; nudged: boolean; askedForHandoff: boolean; progress: Progress | null }
   }
 }
