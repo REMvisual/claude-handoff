@@ -135,11 +135,13 @@ This also installs its small companion, `compact-handoff-answer` (see below). Th
 What happens:
 
 1. The skill runs in `compact-mode`: it asks nothing, commits the session's work, and writes the handoff (and plan).
-2. When that turn ends, the mod checks the files on disk. If anything is missing, empty, interrupted or refused, **the context is left untouched**.
+2. When that turn ends, the mod checks the files on disk. If anything is missing, empty, interrupted or refused, **the context is left untouched**. It also counts the handoff's lines against the skill's minimum for the session's size (Chunked 500 lines from 500K tokens, Deep 300 from 100K). A short handoff gets one more turn to finish mining; still short, the context is left untouched.
 3. The conversation is replaced by one short message naming the files. No summarizer call is made, so it takes milliseconds.
 4. The skill's own paste prompt is sent automatically, so chain tracking continues (seq N+1).
 
 The mod also shows a one-time toast when context passes 70%, suggesting `/compact-handoff`.
+
+The model can't start a handoff on its own while the mod is installed: its own call to `/handoff` or `/handoffplan` is refused, and it tells you to run `/compact-handoff` or `/handoff` instead. A handoff you ask for (typing `/handoff`, or "do a handoff" in your own words) runs as usual.
 
 **Why two plugins:** Claude Code doesn't let a plugin answer a compaction it started itself. `compact-handoff-answer` is about 20 lines. It answers only compactions marked `compact-handoff:v1` and leaves every other compaction alone.
 

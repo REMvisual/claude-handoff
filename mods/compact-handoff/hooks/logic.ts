@@ -61,6 +61,44 @@ export function parseChain(content: string): string | null {
   return m ? `seq ${m[2]}, ${m[1]}` : null
 }
 
+export type Floor = { pass: 'Quick' | 'Deep' | 'Chunked'; min: number }
+
+/**
+ * The handoff skill's line minimum for the mining pass the context size calls for.
+ * Quick gets the light-session floor, so a short session is never refused.
+ */
+export function lineFloor(tokens: number, window: number): Floor {
+  if (tokens >= 500_000) return { pass: 'Chunked', min: 500 }
+  if (tokens >= 100_000) return { pass: 'Deep', min: 300 }
+  return { pass: 'Quick', min: window >= 1_000_000 ? 120 : 80 }
+}
+
+export function countLines(content: string): number {
+  const body = content.replace(/\s+$/, '')
+  return body ? body.split(/\r?\n/).length : 0
+}
+
+/** Sent once when the handoff is under its floor: finish mining, then report again. */
+export function shortPrompt(handoff: string, lines: number, floor: Floor, tokens: number): string {
+  return (
+    `compact-handoff: \`${handoff}\` has ${lines} lines; the ${floor.pass} pass minimum is ${floor.min} ` +
+    `(context was ${Math.round(tokens / 1000)}k tokens). The conversation is deleted after this, so the mining is not finished. ` +
+    'Read `references/mining-deep-chunked.md` if you have not, then go through the conversation early, middle and late ' +
+    'for decisions, numbers, failed approaches, file paths and user feedback the file is missing, and Edit them in. ' +
+    'Extract, do not pad. Then end your turn with the COMPACT-HANDOFF-READY line again.'
+  )
+}
+
+/** The model's own call to a handoff skill, by the Skill tool's `skill` value. */
+export function isHandoffSkill(skill: string): boolean {
+  return /^\/?(?:[\w-]+:)?(handoff|handoffplan)$/.test(skill.trim())
+}
+
+export const SKILL_DENIED =
+  'compact-handoff: a handoff starts when the user asks for one. Do not write a handoff file yourself. ' +
+  'Tell the user the work is at a good point for a handoff and that they can type /compact-handoff ' +
+  '(writes the handoff, then replaces the conversation with it) or /handoff (writes it and keeps the conversation).'
+
 /** Used only when the skill's own paste prompt could not be extracted. */
 export function fallbackPrompt(mode: Mode, handoff: string, plan?: string, chain?: string | null): string {
   const tag = chain ? ` (${chain})` : ''

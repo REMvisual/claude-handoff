@@ -3,8 +3,11 @@ import { expect, mock, test } from 'claude-code/testing'
 import {
   buildInstructions,
   classifyPath,
+  countLines,
   extractPastePrompt,
   fallbackPrompt,
+  isHandoffSkill,
+  lineFloor,
   MARKER,
   parseChain,
   parseSentinel,
@@ -71,6 +74,35 @@ test('the fallback keeps the chain from the handoff header', () => {
   expect(fallbackPrompt('resume', 'h.md', undefined, 'seq 1, PROJ-abc1')).toContain('`h.md` (seq 1, PROJ-abc1)')
   expect(fallbackPrompt('plan', 'h.md', 'p.md', 'seq 2, t')).toContain('`h.md` (seq 2, t)')
   expect(fallbackPrompt('resume', 'h.md')).not.toContain('(seq')
+})
+
+test('the line floor follows the context size', () => {
+  expect(lineFloor(757_000, 1_000_000)).toEqual({ pass: 'Chunked', min: 500 })
+  expect(lineFloor(500_000, 1_000_000)).toEqual({ pass: 'Chunked', min: 500 })
+  expect(lineFloor(150_000, 200_000)).toEqual({ pass: 'Deep', min: 300 })
+  expect(lineFloor(40_000, 1_000_000)).toEqual({ pass: 'Quick', min: 120 })
+  expect(lineFloor(40_000, 200_000)).toEqual({ pass: 'Quick', min: 80 })
+  expect(countLines('a\nb\r\nc\n\n')).toBe(3)
+  expect(countLines('')).toBe(0)
+})
+
+test('names the handoff skills however the Skill tool spells them', () => {
+  for (const s of ['handoff', 'handoffplan', '/handoff', 'claude-handoff:handoff']) expect(isHandoffSkill(s)).toBe(true)
+  for (const s of ['handoff-x', 'compact-handoff', 'beads', 'myhandoff']) expect(isHandoffSkill(s)).toBe(false)
+})
+
+test("the model's own handoff call is refused unless the user asked for one", async ($, on) => {
+  // The engine beneath the plugin: every Skill call it is handed succeeds.
+  on('tool.call', ($, e) => ({ result: { success: true, commandName: String((e as { skill?: string }).skill) } }) as never)
+  on('skill.prompt', ($, e) => ({ text: e.text }))
+  const own = await $.tool.call({ tool: 'Skill', skill: 'handoff' } as never)
+  expect(String(own.deny)).toContain('/compact-handoff')
+  const other = await $.tool.call({ tool: 'Skill', skill: 'beads' } as never)
+  expect(other.deny).toBe(undefined)
+  // /handoffplan typed by the user runs /handoff through the Skill tool in the same turn.
+  await $.skill.prompt({ skill: 'handoffplan', text: 'plan skill body' })
+  const fromPlan = await $.tool.call({ tool: 'Skill', skill: 'handoff' } as never)
+  expect(fromPlan.deny).toBe(undefined)
 })
 
 test('resolves and compares paths across separators', () => {

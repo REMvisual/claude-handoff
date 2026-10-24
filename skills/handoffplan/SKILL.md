@@ -40,7 +40,7 @@ If either file could not be written, end with `COMPACT-HANDOFF-FAILED: {reason}`
 
 ---
 
-**CHECKPOINT before Step 2:** Count the handoff's lines. Check its mining-pass minimum (Quick: 150/250, Deep: 300, Chunked: 500 — see handoff skill's Line Budget table). If the handoff is under its pass minimum, STOP. Run the handoff's Phase 2 gap research pass now — read back what you wrote, scan the conversation for uncaptured data, and Edit to expand. Do not proceed to the plan with a thin handoff. The plan's quality is bounded by the handoff's quality.
+**CHECKPOINT before Step 2:** Count the handoff's lines and print the handoff skill's `LINE CHECK` line. Check its mining-pass minimum (Quick: 150/250, Deep: 300, Chunked: 500 — see handoff skill's Line Budget table). If the handoff is under its pass minimum, STOP. Run the handoff's Phase 2 gap research pass now — read back what you wrote, scan the conversation for uncaptured data, and Edit to expand. Do not proceed to the plan with a thin handoff. The plan's quality is bounded by the handoff's quality.
 
 ---
 

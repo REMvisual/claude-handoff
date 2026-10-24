@@ -4,7 +4,8 @@
 // Order of events (each step is the one the engine allows; see the README):
 //   command  -> timer -> $.command.run(handoff|handoffplan, "compact-mode ...")   (no prompt from inside a command hook)
 //   tool.call Write/Edit records the handoff/plan files the skill writes
-//   turn.complete -> verify the files on disk -> queue /compact-handoff-go       (no compaction while a turn runs)
+//   turn.complete -> verify the files on disk and the handoff's line floor          (under it: ask once for the rest)
+//                 -> queue /compact-handoff-go                                   (no compaction while a turn runs)
 //   compact-handoff-go -> timer -> $.session.compact(marker + stub)              (answered by compact-handoff-answer;
 //                                                                                 a plugin cannot answer its own compaction)
 //   -> $.prompt.submit(the skill's own paste prompt)
@@ -15,17 +16,24 @@ import type { Mode, Run } from '../types'
 import {
   buildInstructions,
   classifyPath,
+  countLines,
   extractPastePrompt,
   fallbackPrompt,
+  isHandoffSkill,
+  lineFloor,
   parseChain,
   parseSentinel,
   resolvePath,
   samePath,
+  shortPrompt,
+  SKILL_DENIED,
   stubText,
 } from './logic'
 
 const runAtom = atom({ plugin: 'compact-handoff', key: 'run' } as const, null as Run | null)
 const nudgedAtom = atom({ plugin: 'compact-handoff', key: 'nudged' } as const, false)
+// True for the rest of a turn in which the user asked for a handoff (in words or with /handoff, /handoffplan).
+const askedAtom = atom({ plugin: 'compact-handoff', key: 'askedForHandoff' } as const, false)
 
 const GO = 'compact-handoff-go'
 const NUDGE_PERCENT = 70
@@ -50,7 +58,15 @@ async function start($: EngineInterface, mode: Mode, args: string) {
   if (running) {
     return { text: 'a run is already in progress (`/compact-handoff cancel` to drop it).' }
   }
-  await update($, runAtom, () => ({ mode, stage: 'handoff' as const, startedAt: Date.now(), files: [] }))
+  const usage = await $.session.usage().catch(() => null)
+  await update($, runAtom, () => ({
+    mode,
+    stage: 'handoff' as const,
+    startedAt: Date.now(),
+    files: [],
+    contextTokens: usage?.context.tokens,
+    window: usage?.context.window,
+  }))
   const skill = mode === 'plan' ? 'handoffplan' : 'handoff'
   const skillArgs = `compact-mode ${args}`.trim()
   // A prompt or command raised from inside this hook would wait on the turn the hook holds.
@@ -91,6 +107,7 @@ async function finishHandoff($: EngineInterface, reason: string, text: string) {
 
   const cwd = await $.session.cwd()
   let chain: string | null = null
+  let lines = 0
   for (const file of [handoff, plan].filter((f): f is string => !!f)) {
     let content = ''
     try {
@@ -99,10 +116,29 @@ async function finishHandoff($: EngineInterface, reason: string, text: string) {
       return abort($, `cannot read ${file}`)
     }
     if (content.trim().length < 200) return abort($, `${file} looks empty`)
-    if (file === handoff) chain = parseChain(content)
+    if (file === handoff) {
+      chain = parseChain(content)
+      lines = countLines(content)
+    }
   }
 
-  const pastePrompt = extractPastePrompt(text) ?? fallbackPrompt(run.mode, handoff, plan, chain)
+  // The conversation is deleted next, so a thin handoff is refused rather than compacted.
+  const tokens = run.contextTokens ?? 0
+  const floor = lineFloor(tokens, run.window ?? 0)
+  if (lines < floor.min) {
+    if (run.retried) return abort($, `${handoff} has ${lines} lines; the ${floor.pass} pass needs ${floor.min}`)
+    const firstPrompt = extractPastePrompt(text)
+    await update($, runAtom, r => (r ? { ...r, retried: true, pastePrompt: firstPrompt ?? r.pastePrompt } : r))
+    say($, `${handoff} has ${lines} lines; the ${floor.pass} pass needs ${floor.min}. Asking for the rest.`)
+    $.clock.after(100, () => {
+      $.prompt
+        .submit({ text: shortPrompt(handoff, lines, floor, tokens) })
+        .catch(err => abort($, `could not ask for the rest of the handoff (${String(err)})`))
+    })
+    return
+  }
+
+  const pastePrompt = extractPastePrompt(text) ?? run.pastePrompt ?? fallbackPrompt(run.mode, handoff, plan, chain)
   await update($, runAtom, r => (r ? { ...r, stage: 'compacting' as const, handoff, plan, pastePrompt } : r))
   // Compaction is refused while a turn runs; a queued command runs once the session is idle.
   $.command.run({ command: GO }).catch(err => abort($, `could not queue the compaction (${String(err)})`))
@@ -188,9 +224,27 @@ export const register: Register = on => {
     return res
   }).catch(($, e, next) => next(e))
 
+  // The model may not start a handoff on its own: the user picks /compact-handoff or /handoff.
+  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+    if (!isHandoffSkill(e.skill) || (await read($, runAtom)) || (await read($, askedAtom))) return next(e)
+    return { deny: SKILL_DENIED }
+  }).catch(($, e, next) => next(e))
+
+  on('prompt.submit', async ($, e, next) => {
+    if (/hand-?off/i.test(e.text ?? '')) await update($, askedAtom, () => true)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // /handoff, /handoffplan typed by the user; /handoffplan then runs /handoff through the Skill tool.
+  on('skill.prompt', async ($, e, next) => {
+    if (isHandoffSkill(e.skill)) await update($, askedAtom, () => true)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
   on('turn.complete', async ($, e, next) => {
     const res = await next(e)
     if (e.agentId) return res
+    await update($, askedAtom, () => false)
     const run = await read($, runAtom)
     if (run) await finishHandoff($, e.reason, res.text)
     else await nudge($)

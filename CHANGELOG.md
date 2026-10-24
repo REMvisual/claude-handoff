@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-10-23
+
+### Fixed
+- `/handoff` on very large sessions came in under its line minimum and still reported "validated" (757K tokens: 346 lines, padded to 459 against a Chunked minimum of 500). Step 4-CHECK now starts with a counted `LINE CHECK: {n} lines, {pass} pass minimum {min}: PASS|FAIL` line; FAIL means mine the conversation again, not pad, and the report quotes the line. Deep and Chunked must actually read `references/mining-deep-chunked.md` before writing.
+- Compact mode says plainly that it shortens only the ending: the mining pass, line minimum and Phase 2 apply in full.
+- `compact-handoff` 0.1.3: counts the handoff's lines against the minimum for the context size at the start of the run. Under it, the mod asks once for the rest; still under it, the context is left untouched.
+
+### Changed
+- `compact-handoff` 0.1.3: the model's own `/handoff` or `/handoffplan` call is refused unless the user asked for a handoff in that turn (typed the command or said so). The model is told to suggest `/compact-handoff` or `/handoff` instead.
+
 ## [2.1.2] - 2026-10-19
 
 ### Fixed

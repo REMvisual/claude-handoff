@@ -30,8 +30,8 @@ The user should not need to provide anything — `/handoff` alone is sufficient.
 
 If `$ARGUMENTS` contains the word `compact-mode`, the `compact-handoff` mod started this run. It replaces the conversation with this handoff when your turn ends, so the turn must finish with nothing pending:
 
-- Run Steps 1-6 exactly as normal. Anything else in `$ARGUMENTS` is the framing hint.
-- **Step 7: one line only** (file path, line count, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
+- Run Steps 1-6 exactly as normal. Anything else in `$ARGUMENTS` is the framing hint. Compact mode shortens only the ending: the mining pass, its reference, the line minimum, Phase 2 and the LINE CHECK apply in full, and matter more, because the conversation is deleted after this turn. The mod counts the lines itself and won't compact a handoff under its pass minimum.
+- **Step 7: one line only** (file path, the LINE CHECK result, chain seq). The compaction replaces this turn seconds later, so a full report is wasted output.
 - **Ask nothing in this turn.** Where a step says to ask (e.g. Tier B "Any doubt"), take its stated default and note the choice in the handoff.
 - **Step 8: don't ask.** Follow the **Yes** flow in `references/close-session.md` (append `## Session Closed`, commit, print the paste prompt), skipping its step 4.
 - **Print the paste prompt block exactly as the template has it**: the `PASTE THIS INTO YOUR NEXT SESSION:` header, the dashed rules, the `(seq {N}, {chain_tag})` line and the onboarding steps. The mod sends that block as the next prompt word for word. Never shorten it to one line, even when you reused or restored an existing handoff instead of writing a new one.
@@ -120,7 +120,7 @@ If arguments were provided ($ARGUMENTS), use as a soft hint for framing. Convers
 
 **Write: "Mining with {Quick/Deep/Chunked} pass ({reason})."** before starting. Don't use numeric names — they collide with chain seq numbers.
 
-For Deep or Chunked, read `references/mining-deep-chunked.md` NOW for the multi-pass protocol. Don't do map-reduce from memory.
+For Deep or Chunked, read `references/mining-deep-chunked.md` NOW for the multi-pass protocol: an actual Read call, before any Write. Don't do map-reduce from memory. Announcing the pass and skipping its reference is how a 757K-token session came out at 346 lines.
 
 **Extraction checklist** (apply per pass):
 
@@ -186,7 +186,15 @@ Check your system prompt for context window size.
 
 ## Step 4-CHECK: Self-Validation
 
-**Read `references/validation.md`** and run every check. If any fails, expand thin sections before proceeding.
+**First, the LINE CHECK.** Count with a tool call, not an estimate (`wc -l {handoff path}`), and print one line:
+
+`LINE CHECK: {n} lines, {pass} pass minimum {min}: PASS` (or `FAIL`)
+
+Minimums: Quick 150 standard / 250 extended, Deep 300, Chunked 500.
+
+**FAIL means the handoff is not finished.** Go back through the conversation, early, middle and late, and extract what the file is missing: decisions, numbers, failed approaches, file paths, user feedback. Don't pad: appendices that restate the file, or lists rebuilt from what it already says, don't count. Count again. Never call the handoff validated, and never go on to Step 5, while the LINE CHECK says FAIL.
+
+Then **read `references/validation.md`** and run every other check. If any fails, expand thin sections before proceeding.
 
 ---
 
@@ -203,7 +211,7 @@ bd remember "Handoff: {path}. Chain: {chain_tag} seq {N}. Status: {status}. Next
 ## Step 7: Report
 
 Tell the user concisely:
-- File path(s) and line count(s)
+- File path(s) and the final LINE CHECK line, verbatim
 - Chain info (tag, seq, new vs continuation)
 - Self-check outcome (and what was expanded if first pass failed)
 - The Next Action
