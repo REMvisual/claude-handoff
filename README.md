@@ -141,6 +141,10 @@ What happens:
 
 While it runs, a bar above the prompt and the spinner line show how far along it is, for example `Handoff 48% · Writing the handoff · 250 of 500 lines`.
 
+<p align="center">
+  <img src="https://github.com/REMvisual/claude-handoff/releases/download/v2.1.5/compact-handoff-progress.png" alt="compact-handoff progress: spinner line and bar at 20%, Mining the session" width="760"/>
+</p>
+
 A handoff needs room: a large one adds up to about 80k tokens of context while it is written. The mod reads where Claude Code compacts on its own and warns as that room shrinks: at about 200k left, at about 100k, and when there is no longer room. With too little room, `/compact-handoff` does not start, because Claude Code would compact before the handoff was written. If Claude Code compacts on its own during a run, the mod ends the run and says no handoff was written.
 
 The model can't start a handoff on its own while the mod is installed: its own call to `/handoff` or `/handoffplan` is refused, and it tells you to run `/compact-handoff` or `/handoff` instead. A handoff you ask for (typing `/handoff`, or "do a handoff" in your own words) runs as usual.
