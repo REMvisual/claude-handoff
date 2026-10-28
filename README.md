@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://github.com/REMvisual/claude-handoff/releases/download/v1.6.0/banner.png" alt="claude-handoff" width="900"/>
+  <img src="https://github.com/REMvisual/claude-handoff/releases/download/v2.1.5/banner.png" alt="claude-handoff: Claude Code session handoff skills and the /compact-handoff mod" width="900"/>
 </p>
 
-**Never lose context between AI coding sessions.**
+# claude-handoff: session handoffs for Claude Code
 
-Two skills for [Claude Code](https://claude.ai/code) that capture decisions, failed approaches, measurements, and next steps — so your next session picks up exactly where you left off. Stop wasting 20-40% of each session rediscovering what was already tried.
+**Never lose context between AI coding sessions.** Claude Code skills and a Claude Code mod that write a structured session handoff: decisions, failed approaches, measurements, and next steps. Your next session, or the same one after compaction, picks up exactly where you left off. Stop wasting 20-40% of each session rediscovering what was already tried.
 
 **Now a Claude Code mod:** `/compact-handoff` writes the handoff, swaps the conversation for it, and keeps working in the same terminal. No new window, no paste. [Jump to the mod ↓](#compact-handoff-mod-experimental)
 
