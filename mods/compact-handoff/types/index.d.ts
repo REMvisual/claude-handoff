@@ -24,6 +24,7 @@ export type Run = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'compact-handoff': { run: Run | null; nudged: boolean; askedForHandoff: boolean; progress: Progress | null }
+    /** `roomWarned`: the highest room warning shown since the last compaction (0-3, logic.ts roomLevel). */
+    'compact-handoff': { run: Run | null; roomWarned: number; askedForHandoff: boolean; progress: Progress | null }
   }
 }

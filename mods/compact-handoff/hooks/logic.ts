@@ -90,6 +90,11 @@ export function shortPrompt(handoff: string, lines: number, floor: Floor, tokens
   )
 }
 
+/** 948k */
+export function k(tokens: number): string {
+  return `${Math.round(tokens / 1000)}k`
+}
+
 export function kTokens(tokens: number): string {
   return `${Math.round(tokens / 1000)}k-token`
 }
@@ -98,6 +103,51 @@ export function kTokens(tokens: number): string {
 export function contextArg(tokens: number | undefined): string {
   return tokens ? `context=${Math.round(tokens / 1000)}k` : ''
 }
+
+/**
+ * Context a run needs between its start and Claude Code's own auto-compact. Two measured Chunked runs
+ * grew it by 45k and 62k (the skill's references, the mining reads, the file and its checks).
+ */
+export function roomNeeded(tokens: number): number {
+  if (tokens >= 500_000) return 80_000
+  if (tokens >= 100_000) return 60_000
+  return 30_000
+}
+
+/** 0 none, 1 early (a handoff has 120k to spare), 2 late (20k to spare), 3 out (less than it needs). */
+export type RoomLevel = 0 | 1 | 2 | 3
+
+export function roomLevel(tokens: number, left: number): RoomLevel {
+  if (tokens < 100_000) return 0
+  const needed = roomNeeded(tokens)
+  if (left < needed) return 3
+  if (left < needed + 20_000) return 2
+  if (left < needed + 120_000) return 1
+  return 0
+}
+
+/** The toast for a room level, once per level until the next compaction. */
+export function roomWarning(level: RoomLevel, tokens: number, left: number): string | null {
+  const needed = k(roomNeeded(tokens))
+  if (level === 1) return `about ${k(left)} of context left before Claude Code compacts on its own. A handoff needs about ${needed}: a good point for /compact-handoff.`
+  if (level === 2) return `only ${k(left)} of context left before Claude Code compacts on its own. Run /compact-handoff now: with under ${needed} left it cannot start.`
+  if (level === 3) return `${k(left)} of context left before Claude Code compacts on its own, less than the ${needed} a handoff needs. /compact-handoff cannot run now; Claude Code's own /compact is what is left.`
+  return null
+}
+
+/** Why /compact-handoff did not start: Claude Code would compact before the handoff was written. */
+export function noRoomText(tokens: number, limit: number): string {
+  return (
+    `Not started. The context is ${k(tokens)} and Claude Code compacts on its own at ${k(limit)}. ` +
+    `A handoff this size needs about ${k(roomNeeded(tokens))} of room, so Claude Code would compact before it was written and nothing would be saved. ` +
+    `Claude Code's own /compact is what is left. Next time, start /compact-handoff when the room warning shows.`
+  )
+}
+
+/** Told to Claude Code's summarizer when its own compaction cuts a run off. */
+export const CUT_OFF_NOTE =
+  'A /compact-handoff run was in progress when this compaction ran, and it was cut off before the handoff file was finished. ' +
+  'Say so in the summary, so the next turn tells the user that no handoff was written.'
 
 export function progressBar(percent: number, width = 20): string {
   const filled = Math.round((Math.max(0, Math.min(100, percent)) / 100) * width)

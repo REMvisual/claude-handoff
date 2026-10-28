@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] - 2026-10-27
+
+### Fixed
+- A `/compact-handoff` started at 948K tokens on a 1M window looked like a 2-minute success but wrote nothing: reading the skill's references took the context to 964K, and Claude Code's own auto-compact fired at 968,811 tokens before the handoff file existed. `compact-handoff` 0.1.5 reads Claude Code's auto-compact point and does not start when less room is left than a handoff needs (about 80K for a Chunked pass; two measured runs used 45K and 62K). It says so plainly instead.
+- If Claude Code compacts on its own during a run anyway, the mod ends the run, tells the summarizer the handoff was cut off, and shows "no handoff was written", so it never reads as a finished handoff.
+
+### Changed
+- The one-time 70% toast is replaced by warnings based on the room left before Claude Code compacts on its own: one at about 200K left ("a good point for /compact-handoff"), one at about 100K ("run it now"), and one when there is no longer room. Each shows once until the next compaction.
+
 ## [2.1.4] - 2026-10-24
 
 ### Added

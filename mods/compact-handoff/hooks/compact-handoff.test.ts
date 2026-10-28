@@ -17,6 +17,9 @@ import {
   parseChain,
   parseSentinel,
   resolvePath,
+  roomLevel,
+  roomNeeded,
+  roomWarning,
   samePath,
   stubText,
 } from './logic'
@@ -220,4 +223,92 @@ test('a running handoff shows its percent in the spinner line and the band', asy
   expect((await bar.find({ type: 'Text', text: /5%/ }))?.text).toContain('5%')
   expect((await bar.find({ type: 'Text', text: /Starting/ }))?.text).toBe('Starting')
   await bar.unmount()
+})
+
+// The context as the engine reports it, with Claude Code's own auto-compact point.
+const usageAt = (tokens: number, threshold: number) =>
+  ({
+    value: {
+      startedAt: 0,
+      rateLimits: [],
+      context: { tokens, window: 1_000_000, percent: tokens / 10_000, breakdown: { autoCompactThreshold: threshold, isAutoCompactEnabled: true } },
+    },
+  }) as never
+
+// One finished main-thread turn.
+const turnDone = { answer: '', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer', category: null, explanation: null } as never
+
+test('room warnings follow the room left before Claude Code compacts on its own', () => {
+  expect(roomNeeded(948_000)).toBe(80_000)
+  expect(roomNeeded(300_000)).toBe(60_000)
+  expect(roomLevel(50_000, 10_000)).toBe(0)
+  expect(roomLevel(700_000, 267_000)).toBe(0)
+  expect(roomLevel(780_000, 187_000)).toBe(1)
+  expect(roomLevel(870_000, 97_000)).toBe(2)
+  expect(roomLevel(948_000, 19_000)).toBe(3)
+  expect(roomWarning(2, 870_000, 97_000)).toContain('only 97k of context left')
+  expect(roomWarning(0, 100_000, 500_000)).toBe(null)
+})
+
+test('a run Claude Code would cut off is not started', async ($, on) => {
+  const clock = mock.clock(on)
+  let tokens = 948_000
+  const runs: string[] = []
+  on('session.usage', () => usageAt(tokens, 967_000))
+  on('command.run', ($, e) => {
+    runs.push(e.command)
+    return { text: '' }
+  })
+  const refused = await $.command.run(typed('compact-handoff'))
+  expect(refused.text).toContain('Not started')
+  expect(refused.text).toContain('compacts on its own at 967k')
+  await clock.advance(200)
+  expect(runs.length).toBe(0)
+  tokens = 874_000
+  const started = await $.command.run(typed('compact-handoff'))
+  expect(started.text).toContain('replaces this conversation')
+  await clock.advance(200)
+  expect(runs).toEqual(['handoff'])
+})
+
+test("Claude Code's own compaction mid-run ends the run and tells its summarizer", async ($, on) => {
+  const clock = mock.clock(on)
+  let told = ''
+  const toasts: string[] = []
+  on('session.usage', () => usageAt(600_000, 967_000))
+  on('command.run', () => ({ text: '' }))
+  on('ui.toast', ($, e) => (toasts.push(e.text), { value: undefined }) as never)
+  on('session.compact', ($, e) => {
+    told = e.instructions ?? ''
+    return { messages: e.messages }
+  })
+  await $.command.run(typed('compact-handoff'))
+  await clock.advance(200)
+  await $.session.compact({ trigger: 'auto', messages: [{ role: 'user', text: 'earlier work', toolUses: [] }] } as never)
+  expect(told).toContain('cut off before the handoff file was finished')
+  expect(toasts.some(t => t.includes('no handoff was written'))).toBe(true)
+  const again = await $.command.run(typed('compact-handoff'))
+  expect(again.text).toContain('replaces this conversation')
+})
+
+test('each room warning shows once as the room shrinks', async ($, on) => {
+  let tokens = 700_000
+  const toasts: string[] = []
+  on('session.usage', () => usageAt(tokens, 967_000))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.toast', ($, e) => (toasts.push(e.text), { value: undefined }) as never)
+  await $.turn.complete(turnDone)
+  expect(toasts.length).toBe(0)
+  tokens = 800_000
+  await $.turn.complete(turnDone)
+  await $.turn.complete(turnDone)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('about 167k of context left')
+  tokens = 880_000
+  await $.turn.complete(turnDone)
+  expect(toasts[1]).toContain('only 87k')
+  tokens = 950_000
+  await $.turn.complete(turnDone)
+  expect(toasts[2]).toContain('cannot run now')
+  expect(toasts.length).toBe(3)
 })

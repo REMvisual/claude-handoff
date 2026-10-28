@@ -4,6 +4,7 @@
 // Order of events (each step is the one the engine allows; see the README):
 //   command  -> timer -> $.command.run(handoff|handoffplan, "compact-mode context=Nk ...")  (no prompt from inside a command hook)
 //   tool.call Write/Edit records the handoff/plan files the skill writes; Read/Write/Edit move the progress
+//   (refused when Claude Code would auto-compact before a handoff could be written; one cutting a run off ends it)
 //   turn.complete -> verify the files on disk and the handoff's line floor          (under it: ask once for the rest)
 //                 -> queue /compact-handoff-go                                   (no compaction while a turn runs)
 //   compact-handoff-go -> timer -> $.session.compact(marker + stub)              (answered by compact-handoff-answer;
@@ -19,15 +20,20 @@ import {
   classifyPath,
   contextArg,
   countLines,
+  CUT_OFF_NOTE,
   extractPastePrompt,
   fallbackPrompt,
   isHandoffSkill,
   lineFloor,
+  noRoomText,
   parseChain,
   parseSentinel,
   progressBar,
   readingProgress,
   resolvePath,
+  roomLevel,
+  roomNeeded,
+  roomWarning,
   samePath,
   shortPrompt,
   SKILL_DENIED,
@@ -36,18 +42,28 @@ import {
 } from './logic'
 
 const runAtom = atom({ plugin: 'compact-handoff', key: 'run' } as const, null as Run | null)
-const nudgedAtom = atom({ plugin: 'compact-handoff', key: 'nudged' } as const, false)
+const roomWarnedAtom = atom({ plugin: 'compact-handoff', key: 'roomWarned' } as const, 0)
 // True for the rest of a turn in which the user asked for a handoff (in words or with /handoff, /handoffplan).
 const askedAtom = atom({ plugin: 'compact-handoff', key: 'askedForHandoff' } as const, false)
 const progressAtom = atom({ plugin: 'compact-handoff', key: 'progress' } as const, null as Progress | null)
 
 const GO = 'compact-handoff-go'
-const NUDGE_PERCENT = 70
 const MAX_COMPACT_TRIES = 40
 const DONE_SHOWN_MS = 8000
 
 function say($: EngineInterface, text: string) {
   $.ui.toast(`Handoff: ${text}`)
+}
+
+/** Context tokens now and where Claude Code compacts on its own: its threshold, or the window when that is off. */
+async function room($: EngineInterface) {
+  const usage = await $.session.usage({ breakdown: 'summary' }).catch(() => null)
+  const tokens = usage?.context.tokens
+  if (!usage || tokens === undefined) return null
+  const breakdown = usage.context.breakdown
+  const window = usage.context.window ?? 0
+  const limit = (breakdown?.isAutoCompactEnabled !== false && breakdown?.autoCompactThreshold) || window
+  return { tokens, window: usage.context.window, limit, left: Math.max(0, limit - tokens) }
 }
 
 async function setProgress($: EngineInterface, next: Progress) {
@@ -71,15 +87,17 @@ async function start($: EngineInterface, mode: Mode, args: string) {
   if (running) {
     return { text: 'A handoff is already running. `/compact-handoff cancel` drops it.' }
   }
-  const usage = await $.session.usage().catch(() => null)
-  const tokens = usage?.context.tokens
+  const now = await room($)
+  const tokens = now?.tokens
+  // A run Claude Code would compact half-way through saves nothing, and its summary replaces the conversation anyway.
+  if (now?.limit && now.left < roomNeeded(now.tokens)) return { text: noRoomText(now.tokens, now.limit) }
   await update($, runAtom, () => ({
     mode,
     stage: 'handoff' as const,
     startedAt: Date.now(),
     files: [],
     contextTokens: tokens,
-    window: usage?.context.window,
+    window: now?.window,
   }))
   await update($, progressAtom, () => ({ percent: 5, step: 'Starting' }))
   const skill = mode === 'plan' ? 'handoffplan' : 'handoff'
@@ -198,7 +216,7 @@ function compactLoop($: EngineInterface, attempt: number) {
     if (result.skip !== undefined) return abort($, `the replacement was skipped: ${result.skip}`)
     if (result.usage) say($, 'compact-handoff-answer is not installed, so Claude Code summarized the conversation instead')
     await update($, runAtom, () => null)
-    await update($, nudgedAtom, () => false)
+    await update($, roomWarnedAtom, () => 0)
     await update($, progressAtom, () => ({ percent: 100, step: 'Done', detail: 'continuing from the handoff' }))
     $.clock.after(DONE_SHOWN_MS, () => void update($, progressAtom, p => (p?.percent === 100 ? null : p)))
     try {
@@ -209,12 +227,15 @@ function compactLoop($: EngineInterface, attempt: number) {
   })()
 }
 
-async function nudge($: EngineInterface) {
-  if (await read($, nudgedAtom)) return
-  const usage = await $.session.usage()
-  if ((usage.context.percent ?? 0) < NUDGE_PERCENT) return
-  await update($, nudgedAtom, () => true)
-  say($, `context is at ${Math.round(usage.context.percent ?? 0)}%. A good point for /compact-handoff.`)
+/** Warns as the room before Claude Code's own compaction shrinks toward what a handoff needs, each level once. */
+async function warnRoom($: EngineInterface) {
+  const now = await room($)
+  if (!now?.limit) return
+  const level = roomLevel(now.tokens, now.left)
+  if (level <= (await read($, roomWarnedAtom))) return
+  await update($, roomWarnedAtom, () => level)
+  const text = roomWarning(level, now.tokens, now.left)
+  if (text) say($, text)
 }
 
 export const register: Register = on => {
@@ -268,6 +289,22 @@ export const register: Register = on => {
     return res
   }).catch(($, e, next) => next(e))
 
+  // Claude Code's own compaction cutting a run off: let it run (there is no room left to refuse it),
+  // tell its summarizer, and end the run so it never reads as a finished handoff.
+  on('session.compact', async ($, e, next) => {
+    const run = e.agentId ? null : await read($, runAtom)
+    const cutOff = run?.stage === 'handoff' && e.trigger !== 'plugin'
+    const res = await next(cutOff ? { ...e, instructions: [e.instructions, CUT_OFF_NOTE].filter(Boolean).join('\n\n') } : e)
+    if (e.agentId || res.skip !== undefined) return res
+    await update($, roomWarnedAtom, () => 0)
+    if (cutOff) {
+      await update($, runAtom, () => null)
+      await update($, progressAtom, () => null)
+      say($, "Claude Code compacted the conversation on its own before the handoff was finished, so no handoff was written. The conversation is now Claude Code's own summary.")
+    }
+    return res
+  }).catch(($, e, next) => next(e))
+
   // The model may not start a handoff on its own: the user picks /compact-handoff or /handoff.
   on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
     if (!isHandoffSkill(e.skill) || (await read($, runAtom)) || (await read($, askedAtom))) return next(e)
@@ -314,7 +351,7 @@ export const register: Register = on => {
     await update($, askedAtom, () => false)
     const run = await read($, runAtom)
     if (run) await finishHandoff($, e.reason, res.text)
-    else await nudge($)
+    else await warnRoom($)
     return res
   }).catch(($, e, next) => next(e))
 }
