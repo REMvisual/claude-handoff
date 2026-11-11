@@ -6,3 +6,21 @@ Thumbs.db
 .env
 .beads/
 .dolt/
+
+# OpenViking (local-mode memory + per-project vectordb)
+ov.conf
+ov.conf.bak-*
+.openviking/
+data/
+
+# Notion release pipeline link (per-project, contains page IDs)
+.notion-release
+
+# Internal tooling docs (beads + OV + Notion integration — not part of the released skill)
+CLAUDE.md
+
+# Beads / Dolt files (added by bd init)
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
