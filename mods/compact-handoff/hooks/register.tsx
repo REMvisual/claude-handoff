@@ -28,6 +28,7 @@ import {
   noRoomText,
   parseChain,
   parseSentinel,
+  pickFile,
   progressBar,
   readingProgress,
   resolvePath,
@@ -147,10 +148,8 @@ async function finishHandoff($: EngineInterface, reason: string, text: string) {
   if (sentinel && !sentinel.ok) return abort($, `the skill could not finish: ${sentinel.reason}`)
 
   const reported = sentinel?.ok ? sentinel.files : []
-  const pick = (kind: 'HANDOFF' | 'PLAN') =>
-    reported.find(f => classifyPath(f) === kind) ?? [...run.files].reverse().find(f => classifyPath(f) === kind)
-  const handoff = pick('HANDOFF')
-  const plan = run.mode === 'plan' ? pick('PLAN') : undefined
+  const handoff = pickFile('HANDOFF', reported, run.files)
+  const plan = run.mode === 'plan' ? pickFile('PLAN', reported, run.files) : undefined
   if (!handoff) return abort($, 'no handoff file was written')
   if (run.mode === 'plan' && !plan) return abort($, 'no plan file was written')
   if (sentinel?.ok && run.files.length && !run.files.some(f => samePath(f, handoff))) {

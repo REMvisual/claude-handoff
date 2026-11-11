@@ -179,6 +179,17 @@ export function advance(prev: Progress | null, next: Progress): Progress {
   return next.detail ? { ...prev, detail: next.detail } : prev
 }
 
+/**
+ * The run's handoff or plan file. The skill names it relative to the repo it wrote in, which is not always
+ * the session's folder, so a file this run wrote with that name wins: the tool gave its full path.
+ */
+export function pickFile(kind: 'HANDOFF' | 'PLAN', reported: string[], written: string[]): string | undefined {
+  const mine = [...written].reverse().filter(f => classifyPath(f) === kind)
+  const named = reported.find(f => classifyPath(f) === kind)
+  if (!named) return mine[0]
+  return mine.find(f => samePath(f, named)) ?? named
+}
+
 /** The model's own call to a handoff skill, by the Skill tool's `skill` value. */
 export function isHandoffSkill(skill: string): boolean {
   return /^\/?(?:[\w-]+:)?(handoff|handoffplan)$/.test(skill.trim())

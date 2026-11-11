@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.6] - 2026-11-10
+
+### Fixed
+- `/compact-handoff` wrote the handoff and then stopped with "could not be read" when the session's folder was not the repo the handoff landed in, for example a session started in one clone and working in another. The skill names the file relative to that repo, and the mod looked for it under the session's folder, so a finished 15-minute handoff was never used. `compact-handoff` 0.1.6 uses the full path of the file the run wrote, and the conversation is replaced as normal.
+
 ## [2.1.5] - 2026-10-27
 
 ### Fixed

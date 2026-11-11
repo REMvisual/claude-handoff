@@ -16,6 +16,7 @@ import {
   writingProgress,
   parseChain,
   parseSentinel,
+  pickFile,
   resolvePath,
   roomLevel,
   roomNeeded,
@@ -156,6 +157,16 @@ test('resolves and compares paths across separators', () => {
   expect(samePath('plans/handoffs/A.md', 'plans/handoffs/B.md')).toBe(false)
 })
 
+test('the file the run wrote wins over the name the skill reported', () => {
+  const full = 'D:\\lane\\.claude\\handoffs\\HANDOFF_a.md'
+  expect(pickFile('HANDOFF', ['.claude/handoffs/HANDOFF_a.md'], [full])).toBe(full)
+  // A reused handoff the run never wrote keeps the reported name.
+  expect(pickFile('HANDOFF', ['plans/handoffs/HANDOFF_old.md'], [full])).toBe('plans/handoffs/HANDOFF_old.md')
+  // No READY line: the last file written.
+  expect(pickFile('HANDOFF', [], ['plans/handoffs/HANDOFF_1.md', 'plans/handoffs/HANDOFF_2.md'])).toBe('plans/handoffs/HANDOFF_2.md')
+  expect(pickFile('PLAN', ['.claude/handoffs/HANDOFF_a.md'], [full])).toBe(undefined)
+})
+
 // A slash command as the person types it.
 const typed = (command: string, args = '') => ({
   command,
@@ -289,6 +300,40 @@ test("Claude Code's own compaction mid-run ends the run and tells its summarizer
   expect(toasts.some(t => t.includes('no handoff was written'))).toBe(true)
   const again = await $.command.run(typed('compact-handoff'))
   expect(again.text).toContain('replaces this conversation')
+})
+
+test('a handoff written in another repo than the session folder is still found', async ($, on) => {
+  const clock = mock.clock(on)
+  // The session sits in one clone and the work, with its handoff, in another.
+  const written = 'D:\\lane\\.claude\\handoffs\\HANDOFF_x_slug_2026-11-10.md'
+  const body = ['# T', '', '**Chain:** `PROJ-abc1` seq `6`', ...Array.from({ length: 130 }, (_, i) => `detail ${i}`)].join('\n')
+  const toasts: string[] = []
+  let told = ''
+  on('session.usage', () => usageAt(40_000, 967_000))
+  on('session.cwd', () => ({ value: 'C:\\main' }) as never)
+  on('fs.read', ($, e) => {
+    if (e.path !== written) throw new Error(`ENOENT: ${e.path}`)
+    return { value: body } as never
+  })
+  on('command.run', () => ({ text: '' }))
+  on('ui.toast', ($, e) => (toasts.push(e.text), { value: undefined }) as never)
+  on('session.compact', ($, e) => {
+    told = e.instructions ?? ''
+    return { messages: [{ role: 'user', text: 'stub', toolUses: [] }] } as never
+  })
+  on('prompt.submit', ($, e) => ({ text: e.text }) as never)
+  on('tool.call', () => ({ result: { type: 'create', filePath: written } }) as never)
+  // The skill names the file relative to the repo it wrote in.
+  on('turn.complete', () => ({ text: 'Handoff written.\n\nCOMPACT-HANDOFF-READY: .claude/handoffs/HANDOFF_x_slug_2026-11-10.md' }))
+  await $.command.run(typed('compact-handoff'))
+  await clock.advance(200)
+  await $.tool.call({ tool: 'Write', file_path: written, content: body } as never)
+  await $.turn.complete(turnDone)
+  expect(toasts).toEqual([])
+  // The replacement names the file where it is, not where the session folder would put it.
+  await $.command.run(typed('compact-handoff-go'))
+  await clock.advance(400)
+  expect(told).toContain(`Handoff: \`${written}\``)
 })
 
 test('each room warning shows once as the room shrinks', async ($, on) => {
